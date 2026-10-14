@@ -6,66 +6,90 @@ use App\Models\Employee;
 use App\Models\Unit;
 use App\Models\Bagian;
 use App\Models\Jabatan;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // Statistik utama
-        $totalKaryawan   = Employee::active()->count();
-        $totalUnit       = Unit::count();
-        $totalBagian     = Bagian::count();
-        $totalJabatan    = Jabatan::count();
+        $karyawanAktif = Employee::active();
 
-        // Rekap per Status Karyawan
-        $rekapStatus = Employee::active()
+        // Statistik utama
+        $totalKaryawan = (clone $karyawanAktif)->count();
+        $totalUnit = Unit::count();
+        $totalBagian = Bagian::count();
+        $totalJabatan = Jabatan::count();
+
+        // Rekap status karyawan
+        $rekapStatus = (clone $karyawanAktif)
             ->selectRaw('status_karyawan, COUNT(*) as total')
             ->groupBy('status_karyawan')
             ->orderByDesc('total')
             ->get();
 
-        // Rekap per Jenis Kelamin
-        $rekapJenisKelamin = Employee::active()
-            ->selectRaw('jenis_kelamin, COUNT(*) as total')
-            ->groupBy('jenis_kelamin')
-            ->get();
-
-        // Rekap per Agama
-        $rekapAgama = Employee::active()
-            ->selectRaw('COALESCE(agama, "Belum Diisi") as agama, COUNT(*) as total')
-            ->groupBy('agama')
+        // Rekap pendidikan terakhir
+        $rekapPendidikan = (clone $karyawanAktif)
+            ->selectRaw("
+                COALESCE(NULLIF(pendidikan_terakhir, ''), 'Belum Diisi')
+                as pendidikan_terakhir,
+                COUNT(*) as total
+            ")
+            ->groupBy('pendidikan_terakhir')
             ->orderByDesc('total')
             ->get();
 
-        // Rekap per Unit (top 10)
+        // Distribusi usia berdasarkan tanggal lahir
+        $sekarang = now()->startOfDay();
+
+        $hitungUsia = function ($usiaMinimum, $usiaMaksimum = null) use ($sekarang) {
+            $query = Employee::active()
+                ->whereNotNull('tanggal_lahir')
+                ->whereDate(
+                    'tanggal_lahir',
+                    '<=',
+                    $sekarang->copy()->subYears($usiaMinimum)
+                );
+
+            if ($usiaMaksimum !== null) {
+                $query->whereDate(
+                    'tanggal_lahir',
+                    '>',
+                    $sekarang->copy()->subYears($usiaMaksimum + 1)
+                );
+            }
+
+            return $query->count();
+        };
+
+        $rekapUsia = [
+            'Di bawah 22 tahun' => Employee::active()
+                ->whereNotNull('tanggal_lahir')
+                ->whereDate(
+                    'tanggal_lahir',
+                    '>',
+                    $sekarang->copy()->subYears(22)
+                )
+                ->count(),
+
+            '22–30 tahun' => $hitungUsia(22, 30),
+            '31–40 tahun' => $hitungUsia(31, 40),
+            '41–50 tahun' => $hitungUsia(41, 50),
+            '51 tahun ke atas' => $hitungUsia(51),
+
+            'Tidak ada data' => Employee::active()
+                ->whereNull('tanggal_lahir')
+                ->count(),
+        ];
+
+        // Sepuluh unit dengan karyawan terbanyak
         $rekapUnit = Employee::active()
-            ->with('unit')
             ->selectRaw('unit_id, COUNT(*) as total')
+            ->with('unit')
             ->groupBy('unit_id')
             ->orderByDesc('total')
             ->limit(10)
             ->get();
 
-        // Rekap rentang usia
-        $now = now();
-        $rekapUsia = [
-            '< 25 Tahun'  => Employee::active()->whereDate('tanggal_lahir', '>', $now->copy()->subYears(25))->count(),
-            '25–34 Tahun' => Employee::active()->whereDate('tanggal_lahir', '<=', $now->copy()->subYears(25))->whereDate('tanggal_lahir', '>', $now->copy()->subYears(35))->count(),
-            '35–44 Tahun' => Employee::active()->whereDate('tanggal_lahir', '<=', $now->copy()->subYears(35))->whereDate('tanggal_lahir', '>', $now->copy()->subYears(45))->count(),
-            '45–54 Tahun' => Employee::active()->whereDate('tanggal_lahir', '<=', $now->copy()->subYears(45))->whereDate('tanggal_lahir', '>', $now->copy()->subYears(55))->count(),
-            '≥ 55 Tahun'  => Employee::active()->whereDate('tanggal_lahir', '<=', $now->copy()->subYears(55))->count(),
-            'Tidak Ada Data' => Employee::active()->whereNull('tanggal_lahir')->count(),
-        ];
-
-        // Rekap per Pendidikan
-        $rekapPendidikan = Employee::active()
-            ->selectRaw('COALESCE(pendidikan_terakhir, "Belum Diisi") as pendidikan_terakhir, COUNT(*) as total')
-            ->groupBy('pendidikan_terakhir')
-            ->orderByDesc('total')
-            ->get();
-
-        // Karyawan terbaru ditambahkan
+        // Lima karyawan terbaru
         $karyawanTerbaru = Employee::active()
             ->with(['unit', 'bagian', 'jabatan'])
             ->latest()
@@ -73,9 +97,15 @@ class DashboardController extends Controller
             ->get();
 
         return view('dashboard', compact(
-            'totalKaryawan', 'totalUnit', 'totalBagian', 'totalJabatan',
-            'rekapStatus', 'rekapJenisKelamin', 'rekapAgama',
-            'rekapUnit', 'rekapUsia', 'rekapPendidikan', 'karyawanTerbaru'
+            'totalKaryawan',
+            'totalUnit',
+            'totalBagian',
+            'totalJabatan',
+            'rekapStatus',
+            'rekapPendidikan',
+            'rekapUsia',
+            'rekapUnit',
+            'karyawanTerbaru'
         ));
     }
 }
