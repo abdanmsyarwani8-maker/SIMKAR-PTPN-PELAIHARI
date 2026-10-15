@@ -41,7 +41,7 @@ class EmployeeViewTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Keluarga / Batih');
-        $response->assertSee('10 Bagian dengan Karyawan Terbanyak');
+        $response->assertSee('5 Bagian dengan Karyawan Terbanyak');
         $response->assertDontSee('10 Unit dengan Karyawan Terbanyak');
         $response->assertDontSee('Unit / Kebun');
     }

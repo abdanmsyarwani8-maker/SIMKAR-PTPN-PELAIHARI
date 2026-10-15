@@ -12,7 +12,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class EmployeeExportController extends Controller
 {
@@ -42,7 +42,7 @@ class EmployeeExportController extends Controller
     /**
      * Ekspor data karyawan ke format Excel multi-sheet.
      */
-    public function export(Request $request): StreamedResponse
+    public function export(Request $request): Response
     {
         $categories = $request->input('categories', ['PKWT', 'Karpim & Karpel', 'KTNG']);
         if (! is_array($categories) || empty($categories)) {
@@ -255,15 +255,14 @@ class EmployeeExportController extends Controller
 
         $dateSuffix = now()->format('Ymd_His');
         $fileName = "SIMKAR_Data_Karyawan_{$dateSuffix}.xlsx";
+        $tempPath = tempnam(sys_get_temp_dir(), 'simkar_export_').'.xlsx';
 
-        return response()->streamDownload(function () use ($spreadsheet) {
-            $writer = new Xlsx($spreadsheet);
-            $writer->save('php://output');
-        }, $fileName, [
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($tempPath);
+
+        return response()->download($tempPath, $fileName, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
-            'Cache-Control' => 'max-age=0',
-        ]);
+        ])->deleteFileAfterSend(true);
     }
 
     /**

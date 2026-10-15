@@ -354,9 +354,6 @@
                         <input class="form-check-input" type="checkbox" name="remember" id="remember" value="1" {{ old('remember') ? 'checked' : '' }}>
                         <label class="form-check-label" for="remember">Ingat saya</label>
                     </div>
-                    @if(Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="forgot-password">Lupa kata sandi?</a>
-                    @endif
                 </div>
 
                 <!-- TOMBOL LOGIN -->
@@ -383,13 +380,42 @@
     const passwordInput = document.getElementById('passwordInput');
     const passwordIcon = document.getElementById('passwordIcon');
 
-    togglePassword.addEventListener('click', function () {
-        const isPassword = passwordInput.type === 'password';
-        passwordInput.type = isPassword ? 'text' : 'password';
-        passwordIcon.className = isPassword ? 'bi bi-eye' : 'bi bi-eye-slash';
-        togglePassword.setAttribute('aria-pressed', String(isPassword));
-        togglePassword.setAttribute('aria-label', isPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
-    });
+    if (togglePassword && passwordInput && passwordIcon) {
+        togglePassword.addEventListener('click', function () {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            passwordIcon.className = isPassword ? 'bi bi-eye' : 'bi bi-eye-slash';
+            togglePassword.setAttribute('aria-pressed', String(isPassword));
+            togglePassword.setAttribute('aria-label', isPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+        });
+    }
+
+    // Fitur Ingat Saya: persistensi email & status checkbox
+    const emailInput = document.getElementById('email');
+    const rememberCheckbox = document.getElementById('remember');
+    const loginForm = document.querySelector('form');
+
+    // Muat email yang tersimpan jika ada
+    const savedEmail = localStorage.getItem('simkar_remember_email');
+    const savedRemember = localStorage.getItem('simkar_remember_checked');
+    if (savedEmail && emailInput && !emailInput.value) {
+        emailInput.value = savedEmail;
+        if (savedRemember === '1' && rememberCheckbox) {
+            rememberCheckbox.checked = true;
+        }
+    }
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', function () {
+            if (rememberCheckbox && rememberCheckbox.checked && emailInput) {
+                localStorage.setItem('simkar_remember_email', emailInput.value.trim());
+                localStorage.setItem('simkar_remember_checked', '1');
+            } else {
+                localStorage.removeItem('simkar_remember_email');
+                localStorage.removeItem('simkar_remember_checked');
+            }
+        });
+    }
 </script>
 
 </body>

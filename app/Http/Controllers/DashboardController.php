@@ -74,20 +74,16 @@ class DashboardController extends Controller
             '31–40 tahun' => $hitungUsia(31, 40),
             '41–50 tahun' => $hitungUsia(41, 50),
             '51 tahun ke atas' => $hitungUsia(51),
-
-            'Tidak ada data' => Employee::active()
-                ->whereNull('tanggal_lahir')
-                ->count(),
         ];
 
-        // Sepuluh bagian dengan karyawan terbanyak
+        // Lima bagian dengan karyawan terbanyak
         $rekapBagian = Employee::active()
             ->whereNotNull('bagian_id')
             ->selectRaw('bagian_id, COUNT(*) as total')
             ->with('bagian')
             ->groupBy('bagian_id')
             ->orderByDesc('total')
-            ->limit(10)
+            ->limit(5)
             ->get();
 
         // Lima karyawan terbaru

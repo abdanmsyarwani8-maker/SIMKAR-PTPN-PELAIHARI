@@ -539,9 +539,7 @@
                 </div>
 
                 @php
-                    $totalUsiaTerdata = collect($rekapUsia)
-                        ->except(['Tidak ada data'])
-                        ->sum();
+                    $totalUsiaTerdata = collect($rekapUsia)->sum();
 
                     $warnaUsia = [
                         'Di bawah 22 tahun' => '#79b5e8',
@@ -549,14 +547,13 @@
                         '31–40 tahun' => '#2c7c49',
                         '41–50 tahun' => '#e3a348',
                         '51 tahun ke atas' => '#9770c4',
-                        'Tidak ada data' => '#b8c2bb',
                     ];
                 @endphp
 
                 @foreach($rekapUsia as $rentang => $jumlah)
                     @php
-                        $persentaseUsia = $totalKaryawan > 0
-                            ? ($jumlah / $totalKaryawan) * 100
+                        $persentaseUsia = $totalUsiaTerdata > 0
+                            ? ($jumlah / $totalUsiaTerdata) * 100
                             : 0;
 
                         $warna = $warnaUsia[$rentang] ?? '#39965b';
@@ -585,10 +582,10 @@
                 <div class="px-3 py-3 border-top">
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="text-muted" style="font-size:11.5px">
-                            Karyawan dengan usia terdata
+                            Total Karyawan Terdata Usia
                         </span>
                         <strong style="font-size:12px;color:#176638">
-                            {{ number_format($totalUsiaTerdata) }}
+                            {{ number_format($totalUsiaTerdata) }} orang
                         </strong>
                     </div>
                 </div>
@@ -601,7 +598,7 @@
 
                 <div class="dashboard-card-header">
                     <i class="bi bi-diagram-3-fill"></i>
-                    10 Bagian dengan Karyawan Terbanyak
+                    5 Bagian dengan Karyawan Terbanyak
                 </div>
 
                 <div class="dashboard-card-body pb-2">
