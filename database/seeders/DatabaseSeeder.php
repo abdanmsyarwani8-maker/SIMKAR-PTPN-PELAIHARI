@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Unit;
 use App\Models\Bagian;
 use App\Models\Jabatan;
+use App\Models\Unit;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -17,9 +17,9 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'admin@simkar.ptpn'],
             [
-                'name'     => 'Administrator SIMKAR',
+                'name' => 'Administrator SIMKAR',
                 'password' => Hash::make('Admin@Simkar2024!'),
-                'role'     => 'admin',
+                'role' => 'admin',
                 'is_active' => true,
             ]
         );
@@ -27,9 +27,9 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'user@simkar.ptpn'],
             [
-                'name'     => 'Pengguna SIMKAR',
+                'name' => 'Pengguna SIMKAR',
                 'password' => Hash::make('User@Simkar2024!'),
-                'role'     => 'user',
+                'role' => 'user',
                 'is_active' => true,
             ]
         );
@@ -52,7 +52,7 @@ class DatabaseSeeder extends Seeder
             ['kode_unit' => 'PAPAR',        'nama_unit' => 'Kebun Papar',                 'nama_singkat' => 'PAPAR'],
             ['kode_unit' => 'BAYAN',        'nama_unit' => 'Kebun Bayan',                 'nama_singkat' => 'BAYAN'],
             ['kode_unit' => 'PAKEM',        'nama_unit' => 'Kebun Pakem',                 'nama_singkat' => 'PAKEM'],
-            ['kode_unit' => 'UGKT',         'nama_unit' => 'Unit Group Kalimantan Tengah','nama_singkat' => 'UGKT'],
+            ['kode_unit' => 'UGKT',         'nama_unit' => 'Unit Group Kalimantan Tengah', 'nama_singkat' => 'UGKT'],
             ['kode_unit' => 'TABAR',        'nama_unit' => 'Kebun Tabar',                 'nama_singkat' => 'TABAR'],
             ['kode_unit' => 'TAJAT',        'nama_unit' => 'Kebun Tajat',                 'nama_singkat' => 'TAJAT'],
             ['kode_unit' => 'PANDAWA',      'nama_unit' => 'Kebun Pandawa I',             'nama_singkat' => 'PANDAWA'],

@@ -58,10 +58,7 @@
 @endpush
 
 @section('content')
-<div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <a href="{{ route('employees.index') }}" class="btn-back">
-        <i class="bi bi-arrow-left"></i> Kembali ke Data Karyawan
-    </a>
+<div class="mb-3 d-flex align-items-center justify-content-end flex-wrap gap-2">
     <div class="d-flex align-items-center gap-2">
         <span class="badge bg-light text-dark border px-3 py-2 rounded-pill" style="font-size:12.5px">
             <i class="bi bi-people-fill me-1" style="color:var(--hijau-med)"></i> Total Karyawan: <strong>{{ number_format($totalEmployee) }}</strong>

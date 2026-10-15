@@ -30,6 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('admin')->group(function () {
         Route::get('/karyawan/tambah', [EmployeeController::class, 'create'])->name('employees.create');
         Route::post('/karyawan', [EmployeeController::class, 'store'])->name('employees.store');
+        Route::delete('/karyawan/hapus-semua', [EmployeeController::class, 'destroyAll'])->name('employees.destroy-all');
         Route::get('/karyawan/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
         Route::put('/karyawan/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
         Route::delete('/karyawan/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
@@ -43,6 +44,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/karyawan/export', [EmployeeExportController::class, 'showForm'])->name('employees.export.form');
         Route::match(['get', 'post'], '/karyawan/export/download', [EmployeeExportController::class, 'export'])->name('employees.export');
         Route::get('/karyawan/import/form', [EmployeeImportController::class, 'showForm'])->name('employees.import.form');
+        Route::get('/karyawan/import/riwayat', [EmployeeImportController::class, 'history'])->name('employees.import.history');
+        Route::get('/karyawan/import/riwayat/{history}', [EmployeeImportController::class, 'showHistory'])->name('employees.import.history.show');
+        Route::delete('/karyawan/import/riwayat/{history}', [EmployeeImportController::class, 'destroyHistory'])->name('employees.import.history.destroy');
         Route::post('/karyawan/import/sheets', [EmployeeImportController::class, 'getSheets'])->name('employees.import.sheets');
         Route::post('/karyawan/import', [EmployeeImportController::class, 'import'])->name('employees.import');
         Route::get('/karyawan/import/hasil', [EmployeeImportController::class, 'result'])->name('employees.import.result');

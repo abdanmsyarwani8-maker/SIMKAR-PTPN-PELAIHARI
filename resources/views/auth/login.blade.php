@@ -369,7 +369,8 @@
 
         <!-- FOOTER -->
         <footer class="login-footer">
-            &copy; {{ date('Y') }} PTPN IV Regional V Kebun Pelaihari<br>
+            &copy; {{ date('Y') }} PTPN IV 
+            Regional V Kebun Pelaihari<br>
             Sistem Informasi Manajemen Karyawan
         </footer>
     </main>

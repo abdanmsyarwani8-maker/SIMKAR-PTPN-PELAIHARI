@@ -46,7 +46,7 @@ class User extends Authenticatable
     {
         return match ($this->role) {
             'admin' => 'Administrator',
-            'user'  => 'Pengguna',
+            'user' => 'Pengguna',
             default => 'Tidak Diketahui',
         };
     }

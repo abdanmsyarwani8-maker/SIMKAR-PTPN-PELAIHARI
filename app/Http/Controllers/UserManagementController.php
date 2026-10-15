@@ -13,6 +13,7 @@ class UserManagementController extends Controller
     public function index()
     {
         $users = User::orderBy('name')->paginate(20);
+
         return view('users.index', compact('users'));
     }
 
@@ -24,23 +25,23 @@ class UserManagementController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
-            'role'     => 'required|in:admin,user',
+            'role' => 'required|in:admin,user',
         ], [
-            'name.required'     => 'Nama wajib diisi.',
-            'email.required'    => 'Email wajib diisi.',
-            'email.unique'      => 'Email sudah digunakan.',
+            'name.required' => 'Nama wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
+            'email.unique' => 'Email sudah digunakan.',
             'password.required' => 'Kata sandi wajib diisi.',
-            'role.required'     => 'Peran wajib dipilih.',
+            'role.required' => 'Peran wajib dipilih.',
         ]);
 
         User::create([
-            'name'      => $validated['name'],
-            'email'     => $validated['email'],
-            'password'  => Hash::make($validated['password']),
-            'role'      => $validated['role'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
             'is_active' => true,
         ]);
 
@@ -56,21 +57,21 @@ class UserManagementController extends Controller
     public function update(Request $request, User $pengguna)
     {
         $validated = $request->validate([
-            'name'      => 'required|string|max:255',
-            'email'     => ['required', 'email', Rule::unique('users')->ignore($pengguna->id)],
-            'role'      => 'required|in:admin,user',
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'email', Rule::unique('users')->ignore($pengguna->id)],
+            'role' => 'required|in:admin,user',
             'is_active' => 'boolean',
-            'password'  => ['nullable', 'confirmed', Password::min(8)->letters()->numbers()],
+            'password' => ['nullable', 'confirmed', Password::min(8)->letters()->numbers()],
         ]);
 
         $pengguna->update([
-            'name'      => $validated['name'],
-            'email'     => $validated['email'],
-            'role'      => $validated['role'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role' => $validated['role'],
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $pengguna->update(['password' => Hash::make($validated['password'])]);
         }
 
@@ -84,6 +85,7 @@ class UserManagementController extends Controller
             return back()->with('error', 'Tidak dapat menghapus akun yang sedang aktif.');
         }
         $pengguna->delete();
+
         return redirect()->route('users.index')
             ->with('success', 'Pengguna berhasil dihapus.');
     }

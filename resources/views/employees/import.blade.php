@@ -36,9 +36,10 @@
 @endpush
 
 @section('content')
-<div class="mb-3">
-    <a href="{{ route('employees.index') }}" class="btn-back">
-        <i class="bi bi-arrow-left"></i> Kembali ke Data Karyawan
+
+<div class="d-flex align-items-center justify-content-end mb-3">
+    <a href="{{ route('employees.import.history') }}" class="btn btn-hijau btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
+        <i class="bi bi-clock-history"></i> Riwayat Import
     </a>
 </div>
 

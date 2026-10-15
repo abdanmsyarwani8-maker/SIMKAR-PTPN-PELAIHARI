@@ -355,8 +355,11 @@
         <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
             <i class="bi bi-shield-lock-fill"></i> <span class="nav-link-text">Pengguna</span>
         </a>
-        <a href="{{ route('employees.import.form') }}" class="nav-link {{ request()->routeIs('employees.import*') ? 'active' : '' }}">
+        <a href="{{ route('employees.import.form') }}" class="nav-link {{ request()->routeIs('employees.import.form') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-arrow-up-fill"></i> <span class="nav-link-text">Import Excel</span>
+        </a>
+        <a href="{{ route('employees.import.history') }}" class="nav-link {{ request()->routeIs('employees.import.history*') || request()->routeIs('employees.import.result') ? 'active' : '' }}">
+            <i class="bi bi-clock-history"></i> <span class="nav-link-text">Riwayat Import</span>
         </a>
         <a href="{{ route('employees.export.form') }}" class="nav-link {{ request()->routeIs('employees.export*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-arrow-down-fill"></i> <span class="nav-link-text">Export Excel</span>

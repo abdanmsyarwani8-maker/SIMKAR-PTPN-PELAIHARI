@@ -3,13 +3,12 @@
 @section('page-title', 'Manajemen Pengguna')
 
 @section('content')
-<div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
-        <h5 class="mb-0 fw-700" style="color:var(--hijau-tua)">Manajemen Pengguna</h5>
-        <div style="font-size:12.5px;color:#6b7c70">Total: {{ $users->total() }} pengguna terdaftar</div>
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div style="font-size:13px;color:#55695c;font-weight:500;">
+        Total: <strong class="text-dark">{{ $users->total() }}</strong> pengguna terdaftar
     </div>
-    <a href="{{ route('users.create') }}" class="btn btn-hijau btn-sm rounded-pill px-3">
-        <i class="bi bi-person-plus-fill me-1"></i> Tambah Pengguna
+    <a href="{{ route('users.create') }}" class="btn btn-hijau btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
+        <i class="bi bi-person-plus-fill"></i> Tambah Pengguna
     </a>
 </div>
 

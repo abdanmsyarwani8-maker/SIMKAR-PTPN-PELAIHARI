@@ -18,12 +18,27 @@
 
 @section('content')
 
+@if(session('success'))
+<div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="bi bi-check-circle-fill fs-5"></i>
+    <div>{{ session('success') }}</div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
+
+@if(session('error'))
+<div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div>{{ session('error') }}</div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
+
 {{-- Header Bar --}}
 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
     <div>
-        <h5 class="mb-0 fw-700" style="color:var(--hijau-tua)">Data Karyawan</h5>
-        <div style="font-size:12.5px;color:#6b7c70">
-            Total ditemukan: <strong>{{ number_format($employees->total()) }}</strong> karyawan
+        <div id="totalCounterHeader" style="font-size:13px;color:#55695c;font-weight:500;">
+            Total ditemukan: <strong class="text-dark">{{ number_format($employees->total()) }}</strong> karyawan
             @if($activeFilters > 0)
             <span class="badge ms-1" style="background:var(--hijau-tua);font-size:11px">
                 {{ $activeFilters }} filter aktif
@@ -31,21 +46,23 @@
             @endif
         </div>
     </div>
-    <div class="d-flex gap-2 flex-wrap">
+    <div class="d-flex gap-2 flex-wrap align-items-center">
         @auth @if(auth()->user()->isAdmin())
-        <a href="{{ route('employees.export.form') }}" class="btn btn-hijau-outline btn-sm rounded-pill px-3">
-            <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Export Excel
+        <a href="{{ route('employees.create') }}" class="btn btn-hijau btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
+            <i class="bi bi-person-plus-fill"></i> Tambah Karyawan
         </a>
-        <a href="{{ route('employees.create') }}" class="btn btn-hijau btn-sm rounded-pill px-3">
-            <i class="bi bi-person-plus-fill me-1"></i> Tambah Karyawan
-        </a>
+
+        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+                data-bs-toggle="modal" data-bs-target="#modalHapusSemuaData">
+            <i class="bi bi-trash3"></i> Hapus Semua Data
+        </button>
         @endif @endauth
 
-        <button class="btn btn-sm btn-hijau-outline rounded-pill px-3 filter-toggle-btn"
-                type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel">
-            <i class="bi bi-funnel-fill me-1"></i> Filter
+        <button class="btn btn-hijau btn-sm rounded-pill px-3 filter-toggle-btn shadow-sm d-inline-flex align-items-center gap-1"
+                type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" id="filterToggleBtn">
+            <i class="bi bi-funnel-fill"></i> Filter
             @if($activeFilters > 0)
-            <span class="filter-badge ms-1">{{ $activeFilters }}</span>
+            <span class="badge bg-white text-success rounded-pill ms-1" id="filterBadgeSpan" style="font-size:10px; font-weight:700;">{{ $activeFilters }}</span>
             @endif
         </button>
     </div>
@@ -67,7 +84,7 @@
                         <i class="bi bi-funnel-fill me-1"></i> Panel Filter
                     </span>
                     <a href="{{ route('employees.index') }}" class="btn btn-sm btn-light rounded-pill"
-                       style="font-size:11px">Reset</a>
+                       style="font-size:11px" onclick="resetFiltersAjax(event)">Reset</a>
                 </div>
 
 
@@ -193,10 +210,10 @@
                 </div>
                 @endif
 
-                {{-- Tombol Terapkan --}}
+                {{-- Tombol Selesai --}}
                 <div class="p-3">
-                    <button type="submit" class="btn btn-hijau w-100 rounded-pill">
-                        <i class="bi bi-funnel me-1"></i> Terapkan Filter
+                    <button type="button" class="btn btn-hijau w-100 rounded-pill shadow-sm" data-bs-toggle="collapse" data-bs-target="#filterPanel">
+                        <i class="bi bi-check-lg me-1"></i> Selesai Memilih
                     </button>
                 </div>
             </div>
@@ -204,10 +221,10 @@
     </div>
 
     {{-- Tabel Utama --}}
-    <div class="{{ $activeFilters > 0 ? 'col-lg-9' : 'col-12' }}">
+    <div class="{{ $activeFilters > 0 ? 'col-lg-9' : 'col-12' }}" id="mainContentCol">
 
         {{-- Pencarian --}}
-        <form method="GET" action="{{ route('employees.index') }}" class="mb-3">
+        <form method="GET" action="{{ route('employees.index') }}" class="mb-3" onsubmit="event.preventDefault(); applyRealtimeFilter();">
             @foreach(request()->except(['q','page']) as $key => $val)
                 @if(is_array($val))
                     @foreach($val as $v)
@@ -221,61 +238,76 @@
                 <span class="input-group-text bg-white border-end-0">
                     <i class="bi bi-search text-muted"></i>
                 </span>
-                <input type="text" name="q" class="form-control border-start-0 ps-0"
+                <input type="text" name="q" id="topSearchInput" class="form-control border-start-0 ps-0"
                        placeholder="Cari nama, NIK SAP, atau nomor karyawan..."
                        value="{{ request('q') }}" style="font-size:13.5px">
-                <button type="submit" class="btn btn-hijau px-3">Cari</button>
+                <button type="button" class="btn btn-hijau px-3" onclick="applyRealtimeFilter()">Cari</button>
             </div>
         </form>
 
         {{-- Active Filter Chips --}}
-        @if($activeFilters > 0)
-        <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-            <span style="font-size:12px;color:#6b7c70">Filter aktif:</span>
-            @if(request('q'))
-            <span class="active-filter-chip">
-                Pencarian: "{{ request('q') }}"
-                <a href="{{ request()->fullUrlWithoutQuery(['q']) }}" style="color:inherit"><i class="bi bi-x-circle"></i></a>
-            </span>
+        <div id="activeFilterChipsContainer">
+            @if($activeFilters > 0)
+            <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+                <span style="font-size:12px;color:#6b7c70">Filter aktif:</span>
+                @if(request('q'))
+                <span class="active-filter-chip">
+                    Pencarian: "{{ request('q') }}"
+                    <a href="{{ request()->fullUrlWithoutQuery(['q']) }}" style="color:inherit" onclick="removeFilterParam(event, 'q')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('bagian_ids'))
+                <span class="active-filter-chip">
+                    Bagian ({{ count(request('bagian_ids')) }})
+                    <a href="{{ request()->fullUrlWithoutQuery(['bagian_ids']) }}" style="color:inherit" onclick="removeFilterParam(event, 'bagian_ids')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('jabatan_ids'))
+                <span class="active-filter-chip">
+                    Jabatan ({{ count(request('jabatan_ids')) }})
+                    <a href="{{ request()->fullUrlWithoutQuery(['jabatan_ids']) }}" style="color:inherit" onclick="removeFilterParam(event, 'jabatan_ids')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('statuses'))
+                <span class="active-filter-chip">
+                    Status ({{ count(request('statuses')) }})
+                    <a href="{{ request()->fullUrlWithoutQuery(['statuses']) }}" style="color:inherit" onclick="removeFilterParam(event, 'statuses')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('jenis_kelamin'))
+                <span class="active-filter-chip">
+                    JK: {{ implode(', ', request('jenis_kelamin')) }}
+                    <a href="{{ request()->fullUrlWithoutQuery(['jenis_kelamin']) }}" style="color:inherit" onclick="removeFilterParam(event, 'jenis_kelamin')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('agama'))
+                <span class="active-filter-chip">
+                    Agama ({{ count(request('agama')) }})
+                    <a href="{{ request()->fullUrlWithoutQuery(['agama']) }}" style="color:inherit" onclick="removeFilterParam(event, 'agama')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('rentang_usia'))
+                <span class="active-filter-chip">
+                    Usia ({{ count(request('rentang_usia')) }})
+                    <a href="{{ request()->fullUrlWithoutQuery(['rentang_usia']) }}" style="color:inherit" onclick="removeFilterParam(event, 'rentang_usia')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('sumber_lembar'))
+                <span class="active-filter-chip">
+                    Sumber ({{ count(request('sumber_lembar')) }})
+                    <a href="{{ request()->fullUrlWithoutQuery(['sumber_lembar']) }}" style="color:inherit" onclick="removeFilterParam(event, 'sumber_lembar')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                <a href="{{ route('employees.index') }}" class="btn btn-sm btn-outline-danger rounded-pill" style="font-size:11px" onclick="resetFiltersAjax(event)">
+                    <i class="bi bi-x-circle me-1"></i>Reset Semua
+                </a>
+            </div>
             @endif
-            @if(request('bagian_ids'))
-            <span class="active-filter-chip">
-                Bagian ({{ count(request('bagian_ids')) }})
-                <a href="{{ request()->fullUrlWithoutQuery(['bagian_ids']) }}" style="color:inherit"><i class="bi bi-x-circle"></i></a>
-            </span>
-            @endif
-            @if(request('statuses'))
-            <span class="active-filter-chip">
-                Status ({{ count(request('statuses')) }})
-                <a href="{{ request()->fullUrlWithoutQuery(['statuses']) }}" style="color:inherit"><i class="bi bi-x-circle"></i></a>
-            </span>
-            @endif
-            @if(request('jenis_kelamin'))
-            <span class="active-filter-chip">
-                JK: {{ implode(', ', request('jenis_kelamin')) }}
-                <a href="{{ request()->fullUrlWithoutQuery(['jenis_kelamin']) }}" style="color:inherit"><i class="bi bi-x-circle"></i></a>
-            </span>
-            @endif
-            @if(request('agama'))
-            <span class="active-filter-chip">
-                Agama ({{ count(request('agama')) }})
-                <a href="{{ request()->fullUrlWithoutQuery(['agama']) }}" style="color:inherit"><i class="bi bi-x-circle"></i></a>
-            </span>
-            @endif
-            @if(request('rentang_usia'))
-            <span class="active-filter-chip">
-                Usia ({{ count(request('rentang_usia')) }})
-                <a href="{{ request()->fullUrlWithoutQuery(['rentang_usia']) }}" style="color:inherit"><i class="bi bi-x-circle"></i></a>
-            </span>
-            @endif
-            <a href="{{ route('employees.index') }}" class="btn btn-sm btn-outline-danger rounded-pill" style="font-size:11px">
-                <i class="bi bi-x-circle me-1"></i>Reset Semua
-            </a>
         </div>
-        @endif
 
-        {{-- Tabel --}}
-        <div class="card">
+        {{-- Tabel Container --}}
+        <div id="tableContainer">
+            <div class="card">
             @if($employees->isEmpty())
             <div class="empty-state">
                 <i class="bi bi-people-fill"></i>
@@ -393,8 +425,49 @@
             </div>
             @endif
         </div>
+        </div> {{-- close #tableContainer --}}
+    </div> {{-- close #mainContentCol --}}
+</div> {{-- close .row --}}
+
+{{-- Modal Hapus Semua Data Karyawan --}}
+@auth @if(auth()->user()->isAdmin())
+<div class="modal fade" id="modalHapusSemuaData" tabindex="-1" aria-labelledby="modalHapusSemuaDataLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white" style="background:#c0392b;">
+                <h6 class="modal-title fw-700 mb-0 d-flex align-items-center gap-2" id="modalHapusSemuaDataLabel">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Konfirmasi Hapus Semua Data
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ route('employees.destroy-all') }}">
+                @csrf
+                @method('DELETE')
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-trash3-fill text-danger" style="font-size:48px;"></i>
+                    </div>
+                    <h5 class="fw-700 text-danger mb-2">Hapus Seluruh Data Karyawan?</h5>
+                    <p class="text-muted small mb-0" style="line-height:1.6">
+                        Tindakan ini akan <strong>menghapus seluruh data karyawan beserta data anggota keluarga/batih</strong> secara permanen dari sistem. Anda dapat menggunakan fitur ini saat ingin mengosongkan data lama untuk import ulang file baru.
+                    </p>
+                    <div class="alert alert-warning text-start mt-3 mb-0 py-2 px-3 small">
+                        <i class="bi bi-info-circle me-1"></i> Data referensi master (Bagian dan Jabatan) tidak akan terhapus.
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center bg-light">
+                    <button type="button" class="btn btn-light rounded-pill px-4 border" data-bs-dismiss="modal">
+                        Batal
+                    </button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-trash3-fill me-1"></i> Ya, Hapus Semua Data
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
+@endif @endauth
 @endsection
 
 @push('scripts')
@@ -405,6 +478,156 @@ function filterList(input, listId) {
     document.querySelectorAll('#' + listId + ' .form-check').forEach(item => {
         item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
+}
+
+// Inisialisasi event listener setelah DOM siap
+document.addEventListener('DOMContentLoaded', function () {
+    const filterPanel = document.getElementById('filterPanel');
+    const mainContentCol = document.getElementById('mainContentCol');
+
+    // Mencegah ruang kosong: Saat filter dibuka, kolom tabel langsung jadi col-lg-9 berdampingan
+    if (filterPanel && mainContentCol) {
+        filterPanel.addEventListener('show.bs.collapse', function () {
+            mainContentCol.classList.remove('col-12');
+            mainContentCol.classList.add('col-lg-9');
+        });
+
+        // Saat filter ditutup, kolom tabel melebar penuh col-12
+        filterPanel.addEventListener('hide.bs.collapse', function () {
+            mainContentCol.classList.remove('col-lg-9');
+            mainContentCol.classList.add('col-12');
+        });
+    }
+
+    // Pasang listener realtime pada seluruh checkbox filter
+    attachCheckboxListeners();
+
+    // Pasang listener pencarian realtime dengan debounce
+    const topSearch = document.getElementById('topSearchInput');
+    if (topSearch) {
+        let searchTimer = null;
+        topSearch.addEventListener('input', function () {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(applyRealtimeFilter, 300);
+        });
+    }
+});
+
+function attachCheckboxListeners() {
+    const filterCheckboxes = document.querySelectorAll('#filterForm input[type="checkbox"]');
+    filterCheckboxes.forEach(cb => {
+        cb.removeEventListener('change', applyRealtimeFilter);
+        cb.addEventListener('change', applyRealtimeFilter);
+    });
+}
+
+// Fungsi eksekusi filter secara realtime via AJAX
+function applyRealtimeFilter() {
+    const form = document.getElementById('filterForm');
+    if (!form) return;
+
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+
+    for (const [key, val] of formData.entries()) {
+        params.append(key, val);
+    }
+
+    const topSearch = document.getElementById('topSearchInput');
+    if (topSearch && topSearch.value.trim() !== '') {
+        params.set('q', topSearch.value.trim());
+    }
+
+    const currentUrlParams = new URLSearchParams(window.location.search);
+    if (currentUrlParams.has('sort')) params.set('sort', currentUrlParams.get('sort'));
+    if (currentUrlParams.has('dir')) params.set('dir', currentUrlParams.get('dir'));
+
+    const url = '{{ route("employees.index") }}?' + params.toString();
+
+    const tableContainer = document.getElementById('tableContainer');
+    if (tableContainer) {
+        tableContainer.style.opacity = '0.5';
+        tableContainer.style.transition = 'opacity 0.15s ease';
+    }
+
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        // 1. Update Tabel & Pagination
+        const newTable = doc.getElementById('tableContainer');
+        if (newTable && tableContainer) {
+            tableContainer.innerHTML = newTable.innerHTML;
+            tableContainer.style.opacity = '1';
+        }
+
+        // 2. Update Active Filter Chips
+        const newChips = doc.getElementById('activeFilterChipsContainer');
+        const oldChips = document.getElementById('activeFilterChipsContainer');
+        if (newChips && oldChips) {
+            oldChips.innerHTML = newChips.innerHTML;
+        }
+
+        // 3. Update Header Total Counter
+        const newCounter = doc.getElementById('totalCounterHeader');
+        const oldCounter = document.getElementById('totalCounterHeader');
+        if (newCounter && oldCounter) {
+            oldCounter.innerHTML = newCounter.innerHTML;
+        }
+
+        // 4. Update Badge Jumlah Filter Aktif di Tombol Filter
+        const newBadge = doc.getElementById('filterBadgeSpan');
+        const oldBadge = document.getElementById('filterBadgeSpan');
+        const filterBtn = document.getElementById('filterToggleBtn');
+        if (newBadge && oldBadge) {
+            oldBadge.innerHTML = newBadge.innerHTML;
+        } else if (newBadge && !oldBadge && filterBtn) {
+            filterBtn.appendChild(newBadge);
+        } else if (!newBadge && oldBadge) {
+            oldBadge.remove();
+        }
+
+        // 5. Update URL Browser tanpa reload halaman
+        window.history.replaceState({}, '', url);
+    })
+    .catch(err => {
+        console.error('Realtime filter error:', err);
+        if (tableContainer) tableContainer.style.opacity = '1';
+    });
+}
+
+// Reset semua filter secara realtime
+function resetFiltersAjax(e) {
+    if (e) e.preventDefault();
+    document.querySelectorAll('#filterForm input[type="checkbox"]').forEach(cb => cb.checked = false);
+    const topSearch = document.getElementById('topSearchInput');
+    if (topSearch) topSearch.value = '';
+    applyRealtimeFilter();
+}
+
+// Hapus parameter filter tertentu dari chip aktif
+function removeFilterParam(e, paramName) {
+    if (e) e.preventDefault();
+    const form = document.getElementById('filterForm');
+    if (!form) return;
+
+    form.querySelectorAll(`[name^="${paramName}"]`).forEach(input => {
+        if (input.type === 'checkbox') input.checked = false;
+        else input.value = '';
+    });
+
+    if (paramName === 'q') {
+        const topSearch = document.getElementById('topSearchInput');
+        if (topSearch) topSearch.value = '';
+    }
+
+    applyRealtimeFilter();
 }
 </script>
 @endpush

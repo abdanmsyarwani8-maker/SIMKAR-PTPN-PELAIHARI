@@ -3,14 +3,39 @@
 @section('page-title', 'Hasil Import Data Karyawan & Batih')
 
 @section('content')
-<div class="mb-3 d-flex align-items-center gap-2">
-    <a href="{{ route('employees.index') }}" class="btn btn-sm btn-hijau rounded-pill px-3">
-        <i class="bi bi-people-fill me-1"></i> Lihat Data Karyawan
-    </a>
-    <a href="{{ route('employees.import.form') }}" class="btn-back">
-        <i class="bi bi-arrow-left"></i> Import File Lain
-    </a>
+<div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="{{ route('employees.import.history') }}" class="btn btn-sm btn-hijau-outline rounded-pill px-3">
+            <i class="bi bi-clock-history me-1"></i> Riwayat Import
+        </a>
+        <a href="{{ route('employees.import.form') }}" class="btn btn-sm btn-hijau rounded-pill px-3 shadow-sm">
+            <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Import File Lain
+        </a>
+        <a href="{{ route('employees.index') }}" class="btn btn-sm btn-hijau-outline rounded-pill px-3">
+            <i class="bi bi-people-fill me-1"></i> Lihat Data Karyawan
+        </a>
+    </div>
+    @if(isset($history))
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill" style="font-size:12px">
+            <i class="bi bi-calendar3 me-1 text-muted"></i> {{ $history->created_at->translatedFormat('d F Y, H:i') }}
+        </span>
+        @if($history->user)
+        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill" style="font-size:12px">
+            <i class="bi bi-person-circle me-1 text-muted"></i> {{ $history->user->name }}
+        </span>
+        @endif
+    </div>
+    @endif
 </div>
+
+@if(session('success'))
+<div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="bi bi-check-circle-fill fs-5"></i>
+    <div>{{ session('success') }}</div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
 
 {{-- Ringkasan Statistik --}}
 <div class="row g-3 mb-4">

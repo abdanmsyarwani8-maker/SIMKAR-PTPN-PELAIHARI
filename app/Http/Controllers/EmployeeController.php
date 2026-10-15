@@ -6,8 +6,10 @@ use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Bagian;
 use App\Models\Employee;
+use App\Models\EmployeeFamily;
 use App\Models\Jabatan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
@@ -152,5 +154,23 @@ class EmployeeController extends Controller
         return redirect()
             ->route('employees.index')
             ->with('success', 'Data karyawan berhasil dihapus.');
+    }
+
+    /**
+     * Hapus seluruh data karyawan dan anggota keluarga/batih (Admin only).
+     */
+    public function destroyAll()
+    {
+        try {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            EmployeeFamily::truncate();
+            Employee::truncate();
+        } finally {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
+
+        return redirect()
+            ->route('employees.index')
+            ->with('success', 'Seluruh data karyawan dan anggota keluarga berhasil dikosongkan.');
     }
 }

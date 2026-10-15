@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Imports\EmployeeImport;
+use App\Models\ImportHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -100,7 +101,8 @@ class EmployeeImportController extends Controller
             Storage::disk('local')->delete($path);
         }
 
-        session()->flash('import_results', [
+        $history = ImportHistory::create([
+            'user_id' => auth()->id(),
             'file_name' => $fileName,
             'inserted' => $results['inserted'],
             'updated' => $results['updated'],
@@ -108,25 +110,70 @@ class EmployeeImportController extends Controller
             'family_inserted' => $results['family_inserted'],
             'family_updated' => $results['family_updated'],
             'skipped' => $results['skipped'],
-            'skipped_details' => array_slice($results['skipped_details'], 0, 50),
-            'errors' => array_slice($results['errors'], 0, 50),
+            'skipped_details' => array_slice($results['skipped_details'], 0, 100),
+            'errors' => array_slice($results['errors'], 0, 100),
             'sheet_results' => $results['sheet_results'],
         ]);
 
-        return redirect()->route('employees.import.result');
+        return redirect()->route('employees.import.history.show', $history)
+            ->with('success', 'File Excel berhasil diimport dan disimpan dalam riwayat!');
     }
 
     /**
-     * Tampilkan halaman hasil import.
+     * Tampilkan riwayat seluruh proses import.
+     */
+    public function history()
+    {
+        $histories = ImportHistory::with('user')
+            ->latest()
+            ->paginate(15);
+
+        return view('employees.import_history', compact('histories'));
+    }
+
+    /**
+     * Tampilkan detail riwayat import tertentu.
+     */
+    public function showHistory(ImportHistory $history)
+    {
+        $results = [
+            'file_name' => $history->file_name,
+            'inserted' => $history->inserted,
+            'updated' => $history->updated,
+            'family_processed' => $history->family_processed,
+            'family_inserted' => $history->family_inserted,
+            'family_updated' => $history->family_updated,
+            'skipped' => $history->skipped,
+            'skipped_details' => $history->skipped_details ?? [],
+            'errors' => $history->errors ?? [],
+            'sheet_results' => $history->sheet_results ?? [],
+        ];
+
+        return view('employees.import_result', compact('results', 'history'));
+    }
+
+    /**
+     * Hapus catatan riwayat import.
+     */
+    public function destroyHistory(ImportHistory $history)
+    {
+        $history->delete();
+
+        return redirect()->route('employees.import.history')
+            ->with('success', 'Catatan riwayat import berhasil dihapus.');
+    }
+
+    /**
+     * Tampilkan halaman hasil import terakhir (fallback).
      */
     public function result()
     {
-        $results = session('import_results');
-        if (! $results) {
-            return redirect()->route('employees.import.form')
-                ->with('error', 'Tidak ada hasil import. Silakan import file terlebih dahulu.');
+        $latest = ImportHistory::latest()->first();
+        if ($latest) {
+            return redirect()->route('employees.import.history.show', $latest);
         }
 
-        return view('employees.import_result', compact('results'));
+        return redirect()->route('employees.import.form')
+            ->with('error', 'Belum ada riwayat import yang tercatat.');
     }
 }
