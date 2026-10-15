@@ -4,12 +4,12 @@
 
 @section('content')
 <div class="mb-3">
-    <a href="{{ route('users.index') }}" class="btn btn-sm btn-light rounded-pill">
-        <i class="bi bi-arrow-left me-1"></i> Kembali
+    <a href="{{ route('users.index') }}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Kembali ke Pengguna
     </a>
 </div>
 <div class="card" style="max-width:500px">
-    <div class="card-header"><i class="bi bi-person-circle me-2 text-success"></i>Informasi Pengguna</div>
+    <div class="card-header"><i class="bi bi-person-circle me-2"></i>Informasi Pengguna</div>
     <div class="card-body p-4">
         <div class="d-flex align-items-center gap-3 mb-4">
             <div style="width:56px;height:56px;border-radius:14px;background:var(--hijau-light);
@@ -40,9 +40,9 @@
         </table>
         <div class="d-flex gap-2 mt-2">
             <a href="{{ route('users.edit', $user) }}" class="btn btn-hijau btn-sm rounded-pill px-3">
-                <i class="bi bi-pencil me-1"></i>Edit
+                <i class="bi bi-pencil-square me-1"></i> Edit Pengguna
             </a>
-            <a href="{{ route('users.index') }}" class="btn btn-light btn-sm rounded-pill px-3">
+            <a href="{{ route('users.index') }}" class="btn btn-light btn-sm rounded-pill px-3 border">
                 Kembali ke Daftar
             </a>
         </div>

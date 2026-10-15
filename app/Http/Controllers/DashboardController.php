@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Employee;
-use App\Models\Unit;
 use App\Models\Bagian;
+use App\Models\Employee;
+use App\Models\EmployeeFamily;
 use App\Models\Jabatan;
 
 class DashboardController extends Controller
@@ -15,7 +15,7 @@ class DashboardController extends Controller
 
         // Statistik utama
         $totalKaryawan = (clone $karyawanAktif)->count();
-        $totalUnit = Unit::count();
+        $totalBatih = EmployeeFamily::count();
         $totalBagian = Bagian::count();
         $totalJabatan = Jabatan::count();
 
@@ -80,31 +80,32 @@ class DashboardController extends Controller
                 ->count(),
         ];
 
-        // Sepuluh unit dengan karyawan terbanyak
-        $rekapUnit = Employee::active()
-            ->selectRaw('unit_id, COUNT(*) as total')
-            ->with('unit')
-            ->groupBy('unit_id')
+        // Sepuluh bagian dengan karyawan terbanyak
+        $rekapBagian = Employee::active()
+            ->whereNotNull('bagian_id')
+            ->selectRaw('bagian_id, COUNT(*) as total')
+            ->with('bagian')
+            ->groupBy('bagian_id')
             ->orderByDesc('total')
             ->limit(10)
             ->get();
 
         // Lima karyawan terbaru
         $karyawanTerbaru = Employee::active()
-            ->with(['unit', 'bagian', 'jabatan'])
+            ->with(['bagian', 'jabatan'])
             ->latest()
             ->limit(5)
             ->get();
 
         return view('dashboard', compact(
             'totalKaryawan',
-            'totalUnit',
+            'totalBatih',
             'totalBagian',
             'totalJabatan',
             'rekapStatus',
             'rekapPendidikan',
             'rekapUsia',
-            'rekapUnit',
+            'rekapBagian',
             'karyawanTerbaru'
         ));
     }

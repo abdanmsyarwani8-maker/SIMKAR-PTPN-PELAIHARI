@@ -4,8 +4,8 @@
 
 @section('content')
 <div class="mb-3">
-    <a href="{{ route('employees.index') }}" class="btn btn-sm btn-light rounded-pill">
-        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
+    <a href="{{ route('employees.index') }}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Kembali ke Data Karyawan
     </a>
 </div>
 
@@ -37,13 +37,6 @@
 
                 <div class="border-top pt-3 text-start">
                     <div class="d-flex gap-2 mb-2">
-                        <i class="bi bi-building text-muted mt-1" style="width:18px"></i>
-                        <div>
-                            <div style="font-size:11px;color:#888">Unit / Kebun</div>
-                            <div style="font-size:13px;font-weight:500">{{ $employee->unit?->nama_unit ?? '-' }}</div>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2 mb-2">
                         <i class="bi bi-diagram-3 text-muted mt-1" style="width:18px"></i>
                         <div>
                             <div style="font-size:11px;color:#888">Bagian</div>
@@ -56,8 +49,19 @@
                             <div style="font-size:11px;color:#888">Mulai Kerja</div>
                             <div style="font-size:13px;font-weight:500">
                                 {{ $employee->tanggal_mulai_kerja?->format('d M Y') ?? '-' }}
-                                @if($employee->masa_kerja)
-                                <span style="font-size:11px;color:#6b7c70">({{ $employee->masa_kerja }})</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mb-2">
+                        <i class="bi bi-hourglass-split text-muted mt-1" style="width:18px"></i>
+                        <div>
+                            <div style="font-size:11px;color:#888">Perkiraan Pensiun (55 Thn)</div>
+                            <div style="font-size:13px;font-weight:500">
+                                {{ $employee->tanggal_pensiun?->format('d M Y') ?? '-' }}
+                                @if($employee->sisa_waktu_pensiun)
+                                <span style="font-size:11px;font-weight:600;color:{{ $employee->sisa_waktu_pensiun === 'Sudah Pensiun' ? '#dc3545' : '#198754' }}">
+                                    ({{ $employee->sisa_waktu_pensiun }})
+                                </span>
                                 @endif
                             </div>
                         </div>
@@ -74,13 +78,13 @@
                 @auth @if(auth()->user()->isAdmin())
                 <div class="d-grid gap-2 mt-3">
                     <a href="{{ route('employees.edit', $employee) }}" class="btn btn-hijau rounded-pill">
-                        <i class="bi bi-pencil me-1"></i> Edit Data
+                        <i class="bi bi-pencil-square me-1"></i> Edit Data
                     </a>
                     <form method="POST" action="{{ route('employees.destroy', $employee) }}"
                           onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                         @csrf @method('DELETE')
                         <button type="submit" class="btn btn-outline-danger w-100 rounded-pill" style="font-size:13px">
-                            <i class="bi bi-trash me-1"></i> Hapus Data
+                            <i class="bi bi-trash3 me-1"></i> Hapus Data
                         </button>
                     </form>
                 </div>
@@ -93,30 +97,37 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-person-lines-fill me-2 text-success"></i>
+                <i class="bi bi-person-vcard-fill me-2"></i>
                 Informasi Lengkap Karyawan
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     @php
+                    $isPkwt = str_contains(strtoupper($employee->status_karyawan ?? ''), 'PKWT');
+
                     $fields = [
-                        ['label'=>'Pers. No.', 'val'=>$employee->pers_no, 'icon'=>'hash'],
                         ['label'=>'NIK SAP', 'val'=>$employee->personnel_number, 'icon'=>'credit-card'],
-                        ['label'=>'NIK Lokal', 'val'=>$employee->nik_lokal, 'icon'=>'card-text'],
                         ['label'=>'Tanggal Lahir', 'val'=>$employee->tanggal_lahir?->format('d M Y').' ('.($employee->umur ? $employee->umur.' tahun' : '-').')', 'icon'=>'calendar'],
+                        ['label'=>'Pensiun (Usia 55)', 'val'=>$employee->tanggal_pensiun ? $employee->tanggal_pensiun->format('d M Y').' ('.$employee->sisa_waktu_pensiun.')' : '-', 'icon'=>'hourglass-split'],
                         ['label'=>'Jenis Kelamin', 'val'=>$employee->jenis_kelamin, 'icon'=>'gender-ambiguous'],
                         ['label'=>'Agama', 'val'=>$employee->agama ?? 'Belum diisi', 'icon'=>'moon-stars'],
                         ['label'=>'Pendidikan Terakhir', 'val'=>$employee->pendidikan_label, 'icon'=>'mortarboard'],
                         ['label'=>'Rentang Usia', 'val'=>$employee->rentang_usia, 'icon'=>'clock-history'],
-                        ['label'=>'Golongan', 'val'=>$employee->golongan ?? '-', 'icon'=>'layers'],
-                        ['label'=>'Grup Golongan', 'val'=>$employee->grup_golongan ?? '-', 'icon'=>'stack'],
-                        ['label'=>'Grup Jabatan', 'val'=>$employee->grup_jabatan ?? '-', 'icon'=>'briefcase'],
-                        ['label'=>'No. PKWT', 'val'=>$employee->no_pkwt ?? '-', 'icon'=>'file-earmark-text'],
                     ];
+
+                    if ($isPkwt) {
+                        $fields[] = ['label'=>'No. PKWT', 'val'=>$employee->no_pkwt ?? '-', 'icon'=>'file-earmark-text'];
+                    } else {
+                        $fields[] = ['label'=>'Golongan', 'val'=>$employee->golongan ?? '-', 'icon'=>'layers'];
+                    }
+
+                    $fields[] = ['label'=>'Grade', 'val'=>$employee->grade ?? '-', 'icon'=>'award'];
+                    $fields[] = ['label'=>'Suku', 'val'=>$employee->suku ?? '-', 'icon'=>'geo-alt'];
+                    $fields[] = ['label'=>'Alamat', 'val'=>$employee->alamat ?? '-', 'icon'=>'house'];
                     @endphp
 
                     @foreach($fields as $field)
-                    <div class="col-sm-6">
+                    <div class="col-sm-6 {{ $field['label'] === 'Alamat' ? 'col-sm-12' : '' }}">
                         <div class="p-3 rounded-3" style="background:var(--hijau-pale);border:1px solid #e0ede5">
                             <div class="d-flex align-items-center gap-2 mb-1">
                                 <i class="bi bi-{{ $field['icon'] }}" style="color:var(--hijau-med);font-size:13px"></i>
@@ -142,6 +153,9 @@
                 @endif
             </div>
         </div>
+
+        {{-- Data Batih / Keluarga --}}
+        @include('employees._family_section')
 
         {{-- Meta info --}}
         <div class="card mt-3">

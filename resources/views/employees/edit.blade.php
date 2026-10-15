@@ -4,14 +4,14 @@
 
 @section('content')
 <div class="mb-3">
-    <a href="{{ route('employees.show', $employee) }}" class="btn btn-sm btn-light rounded-pill">
-        <i class="bi bi-arrow-left me-1"></i> Kembali ke Detail
+    <a href="{{ route('employees.show', $employee) }}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Kembali ke Detail
     </a>
 </div>
 
 <div class="card">
-    <div class="card-header d-flex align-items-center gap-2">
-        <i class="bi bi-pencil-square text-success"></i>
+    <div class="card-header">
+        <i class="bi bi-pencil-square me-1"></i>
         Edit Data: <strong>{{ $employee->nama }}</strong>
     </div>
     <div class="card-body p-4">
@@ -34,11 +34,13 @@
                 <button type="submit" class="btn btn-hijau rounded-pill px-4">
                     <i class="bi bi-check-lg me-1"></i> Perbarui Data
                 </button>
-                <a href="{{ route('employees.show', $employee) }}" class="btn btn-light rounded-pill px-4">
+                <a href="{{ route('employees.show', $employee) }}" class="btn btn-light rounded-pill px-4 border">
                     Batal
                 </a>
             </div>
         </form>
     </div>
 </div>
+
+@include('employees._family_section')
 @endsection

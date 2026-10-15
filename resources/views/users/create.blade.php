@@ -2,9 +2,13 @@
 @section('title', 'Tambah Pengguna')
 @section('page-title', 'Tambah Pengguna Baru')
 @section('content')
-<div class="mb-3"><a href="{{ route('users.index') }}" class="btn btn-sm btn-light rounded-pill"><i class="bi bi-arrow-left me-1"></i> Kembali</a></div>
+<div class="mb-3">
+    <a href="{{ route('users.index') }}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Kembali ke Pengguna
+    </a>
+</div>
 <div class="card" style="max-width:560px">
-    <div class="card-header"><i class="bi bi-person-plus-fill me-2 text-success"></i>Form Tambah Pengguna</div>
+    <div class="card-header"><i class="bi bi-person-plus-fill me-2"></i>Form Tambah Pengguna</div>
     <div class="card-body p-4">
         @if($errors->any())<div class="alert alert-danger mb-3"><ul class="mb-0 ps-3">@foreach($errors->all() as $e)<li style="font-size:13px">{{ $e }}</li>@endforeach</ul></div>@endif
         <form method="POST" action="{{ route('users.store') }}">
@@ -24,8 +28,8 @@
                     <option value="admin" {{ old('role')=='admin'?'selected':'' }}>Administrator</option>
                 </select></div>
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-hijau rounded-pill px-4"><i class="bi bi-check me-1"></i>Simpan</button>
-                <a href="{{ route('users.index') }}" class="btn btn-light rounded-pill px-4">Batal</a>
+                <button type="submit" class="btn btn-hijau rounded-pill px-4"><i class="bi bi-check-lg me-1"></i> Simpan Data</button>
+                <a href="{{ route('users.index') }}" class="btn btn-light rounded-pill px-4 border">Batal</a>
             </div>
         </form>
     </div>

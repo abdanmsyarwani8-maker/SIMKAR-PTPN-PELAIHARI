@@ -33,8 +33,11 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
         @auth @if(auth()->user()->isAdmin())
+        <a href="{{ route('employees.export.form') }}" class="btn btn-hijau-outline btn-sm rounded-pill px-3">
+            <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Export Excel
+        </a>
         <a href="{{ route('employees.create') }}" class="btn btn-hijau btn-sm rounded-pill px-3">
-            <i class="bi bi-plus-lg me-1"></i> Tambah Karyawan
+            <i class="bi bi-person-plus-fill me-1"></i> Tambah Karyawan
         </a>
         @endif @endauth
 
@@ -61,32 +64,12 @@
                 {{-- Header Filter --}}
                 <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                     <span class="fw-700" style="font-size:13px;color:var(--hijau-tua)">
-                        <i class="bi bi-funnel me-1"></i> Panel Filter
+                        <i class="bi bi-funnel-fill me-1"></i> Panel Filter
                     </span>
                     <a href="{{ route('employees.index') }}" class="btn btn-sm btn-light rounded-pill"
                        style="font-size:11px">Reset</a>
                 </div>
 
-                {{-- Filter Unit/Kebun --}}
-                <div class="filter-group">
-                    <div class="filter-group-title">
-                        Unit / Kebun
-                        @if(request('unit_ids')) <span class="filter-badge">{{ count(request('unit_ids')) }}</span> @endif
-                    </div>
-                    <input type="text" class="filter-search" placeholder="Cari unit..." oninput="filterList(this,'unitList')">
-                    <div class="filter-list" id="unitList">
-                        @foreach($units as $unit)
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="unit_ids[]"
-                                   value="{{ $unit->id }}" id="unit{{ $unit->id }}"
-                                   {{ in_array($unit->id, request('unit_ids',[]))?'checked':'' }}>
-                            <label class="form-check-label" for="unit{{ $unit->id }}">
-                                {{ $unit->nama_unit }}
-                            </label>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
 
                 {{-- Filter Bagian --}}
                 <div class="filter-group">
@@ -255,12 +238,6 @@
                 <a href="{{ request()->fullUrlWithoutQuery(['q']) }}" style="color:inherit"><i class="bi bi-x-circle"></i></a>
             </span>
             @endif
-            @if(request('unit_ids'))
-            <span class="active-filter-chip">
-                Unit ({{ count(request('unit_ids')) }})
-                <a href="{{ request()->fullUrlWithoutQuery(['unit_ids']) }}" style="color:inherit"><i class="bi bi-x-circle"></i></a>
-            </span>
-            @endif
             @if(request('bagian_ids'))
             <span class="active-filter-chip">
                 Bagian ({{ count(request('bagian_ids')) }})
@@ -301,7 +278,7 @@
         <div class="card">
             @if($employees->isEmpty())
             <div class="empty-state">
-                <i class="bi bi-people"></i>
+                <i class="bi bi-people-fill"></i>
                 <h5>Tidak ada data karyawan</h5>
                 <p style="font-size:13.5px">
                     @if($activeFilters > 0)
@@ -327,11 +304,11 @@
                                 </a>
                             </th>
                             <th>NIK SAP</th>
-                            <th>Unit / Kebun</th>
                             <th>Bagian</th>
                             <th>Jabatan</th>
                             <th>J.K</th>
                             <th>Status</th>
+                            <th>Pensiun (55 Thn)</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -341,6 +318,8 @@
                             $badgeClass = match(true) {
                                 str_contains($k->status_karyawan??'', 'Karpim') => 'badge-karpim',
                                 str_contains($k->status_karyawan??'', 'Karpel') => 'badge-karpel',
+                                str_contains($k->status_karyawan??'', 'PKWT')   => 'badge-pkwt',
+                                str_contains($k->status_karyawan??'', 'KTNG')   => 'badge-ktng',
                                 str_contains($k->status_karyawan??'', 'Papam')  => 'badge-papam',
                                 default => 'bg-secondary text-white',
                             };
@@ -353,8 +332,7 @@
                                     {{ $k->nama }}
                                 </a>
                             </td>
-                            <td><code style="font-size:11.5px">{{ $k->personnel_number ?? '-' }}</code></td>
-                            <td style="font-size:12.5px">{{ $k->unit?->nama_unit ?? '-' }}</td>
+                            <td style="font-size:12.5px;color:#2c3e50">{{ $k->personnel_number ?? '-' }}</td>
                             <td style="font-size:12.5px">{{ $k->bagian?->nama_bagian ?? '-' }}</td>
                             <td style="font-size:12.5px">{{ $k->jabatan?->nama_jabatan ?? '-' }}</td>
                             <td>
@@ -367,21 +345,31 @@
                                 </span>
                             </td>
                             <td>
+                                @if($k->tanggal_pensiun)
+                                    <div style="font-size:12px;font-weight:600;white-space:nowrap">{{ $k->tanggal_pensiun->format('d M Y') }}</div>
+                                    <div style="font-size:10.5px;font-weight:500;white-space:nowrap;color:{{ $k->sisa_waktu_pensiun === 'Sudah Pensiun' ? '#dc3545' : '#198754' }}">
+                                        {{ $k->sisa_waktu_pensiun }}
+                                    </div>
+                                @else
+                                    <span class="text-muted" style="font-size:12px">-</span>
+                                @endif
+                            </td>
+                            <td>
                                 <div class="d-flex gap-1">
                                     <a href="{{ route('employees.show', $k) }}"
-                                       class="btn btn-sm btn-light rounded-pill" title="Detail">
+                                       class="btn-action" title="Detail Karyawan">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     @auth @if(auth()->user()->isAdmin())
                                     <a href="{{ route('employees.edit', $k) }}"
-                                       class="btn btn-sm btn-light rounded-pill" title="Edit">
-                                        <i class="bi bi-pencil"></i>
+                                       class="btn-action" title="Edit Data">
+                                        <i class="bi bi-pencil-square"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('employees.destroy', $k) }}"
+                                    <form method="POST" action="{{ route('employees.destroy', $k) }}" class="d-inline m-0 p-0"
                                           onsubmit="return confirm('Hapus data {{ addslashes($k->nama) }}?')">
                                         @csrf @method('DELETE')
-                                        <button class="btn btn-sm btn-light rounded-pill text-danger" title="Hapus">
-                                            <i class="bi bi-trash"></i>
+                                        <button type="submit" class="btn-action btn-action-danger" title="Hapus Data">
+                                            <i class="bi bi-trash3"></i>
                                         </button>
                                     </form>
                                     @endif @endauth
@@ -394,12 +382,14 @@
             </div>
 
             {{-- Pagination --}}
-            <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 px-4 py-3 border-top">
                 <div style="font-size:12.5px;color:#6b7c70">
                     Menampilkan {{ $employees->firstItem() }}–{{ $employees->lastItem() }}
                     dari {{ number_format($employees->total()) }} karyawan
                 </div>
-                {{ $employees->withQueryString()->links('vendor.pagination.bootstrap-5') }}
+                <div class="ms-auto">
+                    {{ $employees->withQueryString()->links('vendor.pagination.bootstrap-5') }}
+                </div>
             </div>
             @endif
         </div>
@@ -416,8 +406,5 @@ function filterList(input, listId) {
         item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
 }
-
-// Submit filter saat checkbox berubah (opsional — bisa manual dengan tombol)
-// Dibiarkan manual agar filter bisa dikombinasikan dulu
 </script>
 @endpush

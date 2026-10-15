@@ -367,13 +367,13 @@
         <div class="col-6 col-xl-3">
             <div class="stat-card">
                 <div class="stat-icon blue">
-                    <i class="bi bi-building-fill"></i>
+                    <i class="bi bi-people-fill"></i>
                 </div>
                 <div>
                     <div class="stat-value">
-                        {{ number_format($totalUnit) }}
+                        {{ number_format($totalBatih) }}
                     </div>
-                    <div class="stat-label">Unit / Kebun</div>
+                    <div class="stat-label">Keluarga / Batih</div>
                 </div>
             </div>
         </div>
@@ -528,7 +528,7 @@
             <div class="dashboard-card">
 
                 <div class="dashboard-card-header">
-                    <i class="bi bi-clock-history"></i>
+                    <i class="bi bi-clock-fill"></i>
                     Distribusi Usia
                 </div>
 
@@ -600,18 +600,18 @@
             <div class="dashboard-card">
 
                 <div class="dashboard-card-header">
-                    <i class="bi bi-geo-alt-fill"></i>
-                    10 Unit dengan Karyawan Terbanyak
+                    <i class="bi bi-diagram-3-fill"></i>
+                    10 Bagian dengan Karyawan Terbanyak
                 </div>
 
                 <div class="dashboard-card-body pb-2">
                     <p class="section-description mt-0 mb-3">
-                        Peringkat unit berdasarkan jumlah karyawan aktif.
+                        Peringkat bagian / divisi berdasarkan jumlah karyawan aktif.
                     </p>
                 </div>
 
-                @if($rekapUnit->isNotEmpty())
-                    @foreach($rekapUnit as $index => $item)
+                @if($rekapBagian->isNotEmpty())
+                    @foreach($rekapBagian as $index => $item)
                         <div class="summary-row">
                             <div class="unit-rank {{ $index === 0 ? 'first' : '' }}">
                                 {{ $index + 1 }}
@@ -619,13 +619,13 @@
 
                             <div class="flex-grow-1">
                                 <div class="unit-name">
-                                    {{ $item->unit?->nama_unit ?? 'Unit tidak diketahui' }}
+                                    {{ $item->bagian?->nama_bagian ?? 'Bagian tidak diketahui' }}
                                 </div>
 
                                 <div class="progress mt-2">
                                     <div
                                         class="progress-bar"
-                                        style="width: {{ $rekapUnit->max('total') > 0 ? ($item->total / $rekapUnit->max('total')) * 100 : 0 }}%">
+                                        style="width: {{ $rekapBagian->max('total') > 0 ? ($item->total / $rekapBagian->max('total')) * 100 : 0 }}%">
                                     </div>
                                 </div>
                             </div>
@@ -637,8 +637,8 @@
                     @endforeach
                 @else
                     <div class="empty-state">
-                        <i class="bi bi-building"></i>
-                        Belum ada data karyawan per unit.
+                        <i class="bi bi-diagram-3"></i>
+                        Belum ada data karyawan per bagian.
                     </div>
                 @endif
 
@@ -673,7 +673,7 @@
                             <th style="width:45px">No.</th>
                             <th>Nama Karyawan</th>
                             <th>NIK SAP</th>
-                            <th>Unit / Kebun</th>
+                            <th>Bagian</th>
                             <th>Jabatan</th>
                             <th>Status</th>
                         </tr>
@@ -687,7 +687,9 @@
                                 $kelasStatus = match(true) {
                                     str_contains($status, 'Karpim') => 'badge-karpim',
                                     str_contains($status, 'Karpel') => 'badge-karpel',
-                                    str_contains($status, 'Papam') => 'badge-papam',
+                                    str_contains($status, 'PKWT')   => 'badge-pkwt',
+                                    str_contains($status, 'KTNG')   => 'badge-ktng',
+                                    str_contains($status, 'Papam')  => 'badge-papam',
                                     default => 'bg-secondary text-white',
                                 };
                             @endphp
@@ -706,13 +708,11 @@
                                 </td>
 
                                 <td>
-                                    <code style="font-size:11px">
-                                        {{ $k->personnel_number ?? '-' }}
-                                    </code>
+                                    <span style="font-size:12.5px;color:#2c3e50">{{ $k->personnel_number ?? '-' }}</span>
                                 </td>
 
                                 <td>
-                                    {{ $k->unit?->nama_unit ?? '-' }}
+                                    {{ $k->bagian?->nama_bagian ?? '-' }}
                                 </td>
 
                                 <td>
@@ -732,7 +732,7 @@
             </div>
         @else
             <div class="empty-state">
-                <i class="bi bi-people"></i>
+                <i class="bi bi-people-fill"></i>
                 Belum ada data karyawan yang dapat ditampilkan.
             </div>
         @endif

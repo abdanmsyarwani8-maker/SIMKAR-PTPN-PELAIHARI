@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Imports\EmployeeSheetImport;
+use App\Imports\EmployeeImport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use Illuminate\Support\Facades\Storage;
 
 class EmployeeImportController extends Controller
 {
@@ -19,16 +20,20 @@ class EmployeeImportController extends Controller
     }
 
     /**
-     * Baca nama lembar dari file yang diupload (AJAX).
+     * Baca daftar lembar dari file yang diupload (AJAX).
      */
     public function getSheets(Request $request)
     {
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls|max:51200',
+        ], [
+            'file.required' => 'File Excel wajib dipilih.',
+            'file.mimes' => 'Format file harus .xlsx atau .xls.',
+            'file.max' => 'Ukuran file maksimal 50MB.',
         ]);
 
-        $file     = $request->file('file');
-        $path     = $file->store('imports/temp', 'local');
+        $file = $request->file('file');
+        $path = $file->store('imports/temp', 'local');
         $fullPath = Storage::disk('local')->path($path);
 
         try {
@@ -39,83 +44,73 @@ class EmployeeImportController extends Controller
                 $rowCount = max(0, $sheet->getHighestDataRow() - 1);
                 $sheets[] = [
                     'index' => $i,
-                    'name'  => $name,
-                    'rows'  => $rowCount,
+                    'name' => $name,
+                    'rows' => $rowCount,
                 ];
             }
             Storage::disk('local')->delete($path);
+
             return response()->json(['sheets' => $sheets]);
         } catch (\Throwable $e) {
             Storage::disk('local')->delete($path);
-            return response()->json(['error' => 'Gagal membaca file: ' . $e->getMessage()], 422);
+
+            return response()->json(['error' => 'Gagal membaca lembar file Excel: '.$e->getMessage()], 422);
         }
     }
 
     /**
-     * Proses import lembar yang dipilih.
+     * Proses import file Excel (karyawan dan batih).
      */
     public function import(Request $request)
     {
         $request->validate([
-            'file'          => 'required|file|mimes:xlsx,xls|max:51200',
-            'sheet_names'   => 'required|array|min:1',
-            'sheet_names.*' => 'required|string',
+            'file' => 'required|file|mimes:xlsx,xls|max:51200',
+            'sheet_names' => 'nullable|array',
+            'sheet_names.*' => 'nullable|string',
         ], [
-            'file.required'        => 'File Excel wajib dipilih.',
-            'file.mimes'           => 'Format file harus .xlsx atau .xls.',
-            'file.max'             => 'Ukuran file maksimal 50MB.',
-            'sheet_names.required' => 'Pilih minimal satu lembar untuk diimport.',
+            'file.required' => 'File Excel wajib dipilih.',
+            'file.mimes' => 'Format file harus .xlsx atau .xls.',
+            'file.max' => 'Ukuran file maksimal 50MB.',
         ]);
 
-        $file     = $request->file('file');
+        $file = $request->file('file');
         $fileName = $file->getClientOriginalName();
-        $path     = $file->store('imports', 'local');
+        $path = $file->store('imports', 'local');
         $fullPath = Storage::disk('local')->path($path);
 
-        $totalInserted = 0;
-        $totalUpdated  = 0;
-        $totalSkipped  = 0;
-        $allErrors     = [];
-        $sheetResults  = [];
+        $selectedSheets = $request->input('sheet_names', []);
+        // Bersihkan sheet_names dari nilai kosong
+        $selectedSheets = array_values(array_filter((array) $selectedSheets, fn ($s) => $s !== null && trim((string) $s) !== ''));
 
         try {
-            foreach ($request->input('sheet_names') as $sheetName) {
-                try {
-                    $importer = new EmployeeSheetImport($sheetName, $fileName);
+            DB::beginTransaction();
 
-                    Excel::import($importer, $fullPath, null, \Maatwebsite\Excel\Excel::XLSX);
+            $importer = new EmployeeImport($fileName, $selectedSheets);
+            Excel::import($importer, $fullPath);
 
-                    $totalInserted += $importer->inserted;
-                    $totalUpdated  += $importer->updated;
-                    $totalSkipped  += $importer->skipped;
-                    $allErrors      = array_merge($allErrors, $importer->errors);
+            $results = $importer->getResults();
 
-                    $sheetResults[] = [
-                        'sheet'    => $sheetName,
-                        'inserted' => $importer->inserted,
-                        'updated'  => $importer->updated,
-                        'skipped'  => $importer->skipped,
-                    ];
-                } catch (\Throwable $e) {
-                    $allErrors[]    = "Error pada lembar '{$sheetName}': " . $e->getMessage();
-                    $sheetResults[] = [
-                        'sheet'    => $sheetName,
-                        'inserted' => 0,
-                        'updated'  => 0,
-                        'skipped'  => 0,
-                    ];
-                }
-            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()->route('employees.import.form')
+                ->with('error', 'Terjadi kesalahan sistem saat memproses import: '.$e->getMessage());
         } finally {
             Storage::disk('local')->delete($path);
         }
 
         session()->flash('import_results', [
-            'inserted'      => $totalInserted,
-            'updated'       => $totalUpdated,
-            'skipped'       => $totalSkipped,
-            'errors'        => array_slice($allErrors, 0, 30),
-            'sheet_results' => $sheetResults,
+            'file_name' => $fileName,
+            'inserted' => $results['inserted'],
+            'updated' => $results['updated'],
+            'family_processed' => $results['family_processed'],
+            'family_inserted' => $results['family_inserted'],
+            'family_updated' => $results['family_updated'],
+            'skipped' => $results['skipped'],
+            'skipped_details' => array_slice($results['skipped_details'], 0, 50),
+            'errors' => array_slice($results['errors'], 0, 50),
+            'sheet_results' => $results['sheet_results'],
         ]);
 
         return redirect()->route('employees.import.result');
@@ -127,10 +122,11 @@ class EmployeeImportController extends Controller
     public function result()
     {
         $results = session('import_results');
-        if (!$results) {
+        if (! $results) {
             return redirect()->route('employees.import.form')
                 ->with('error', 'Tidak ada hasil import. Silakan import file terlebih dahulu.');
         }
+
         return view('employees.import_result', compact('results'));
     }
 }

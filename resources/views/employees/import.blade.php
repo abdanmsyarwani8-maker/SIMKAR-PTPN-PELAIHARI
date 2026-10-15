@@ -37,17 +37,20 @@
 
 @section('content')
 <div class="mb-3">
-    <a href="{{ route('employees.index') }}" class="btn btn-sm btn-light rounded-pill">
-        <i class="bi bi-arrow-left me-1"></i> Kembali
+    <a href="{{ route('employees.index') }}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Kembali ke Data Karyawan
     </a>
 </div>
 
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="card">
-            <div class="card-header d-flex align-items-center gap-2">
-                <i class="bi bi-file-earmark-spreadsheet-fill text-success"></i>
-                Import Data Karyawan dari Excel
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-file-earmark-arrow-up-fill me-1"></i>
+                    Import Data Karyawan dari Excel
+                </div>
+                <span class="badge" style="background:var(--hijau-light);color:var(--hijau-tua)">Format .xlsx / .xls</span>
             </div>
             <div class="card-body p-4">
 
@@ -111,7 +114,7 @@
 
                         <div class="mt-3">
                             <button type="submit" class="btn btn-hijau rounded-pill px-4" id="importBtn">
-                                <i class="bi bi-upload me-2"></i>Mulai Import
+                                <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Mulai Import
                             </button>
                         </div>
                     </div>
@@ -123,7 +126,7 @@
     {{-- Panduan --}}
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-header"><i class="bi bi-question-circle me-2 text-info"></i>Panduan Import</div>
+            <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>Panduan Import</div>
             <div class="card-body" style="font-size:13px">
                 <ol class="ps-3" style="line-height:1.9">
                     <li>Klik area upload atau seret file .xlsx ke dalamnya</li>
@@ -134,32 +137,44 @@
 
                 <div class="border-top pt-3 mt-2">
                     <div class="fw-700 mb-2" style="color:var(--hijau-tua)">Format Kolom yang Didukung:</div>
-                    <ul class="ps-3" style="line-height:1.9">
-                        <li>Personnel Number / NIK SAP</li>
-                        <li>Employee Name / Nama</li>
-                        <li>Date of Birth / Tanggal Lahir</li>
-                        <li>Start Date / Tanggal Mulai Kerja</li>
-                        <li>Gender / Jenis Kelamin</li>
-                        <li>Religion / Agama</li>
-                        <li>Education / Pendidikan</li>
-                        <li>Organizational Unit / Bagian</li>
-                        <li>Position / Jabatan</li>
-                        <li>Personnel Subarea / Unit</li>
-                        <li>Employee Group / Status</li>
+                    <div class="fw-600 text-muted mb-1" style="font-size:12px">Data Utama Karyawan:</div>
+                    <ul class="ps-3 mb-2" style="line-height:1.7">
+                        <li><strong>NIK SAP</strong> / Personnel Number (Identitas Utama)</li>
+                        <li>Nama Karyawan / Employee Name</li>
+                        <li>Kategori: PKWT, KTNG, Karpim &amp; Karpel</li>
+                        <li>No. PKWT / Kontrak</li>
+                        <li>TMT Kerja / Tanggal Mulai Kerja</li>
+                        <li>Tanggal Lahir Karyawan</li>
+                        <li>Jenis Kelamin, Agama, Pendidikan</li>
+                        <li>Grade, Suku, Alamat</li>
+                        <li>Bagian, Jabatan</li>
+                    </ul>
+
+                    <div class="fw-600 text-muted mb-1" style="font-size:12px">Data Batih / Keluarga:</div>
+                    <ul class="ps-3 mb-0" style="line-height:1.7">
+                        <li>Nama Anggota Keluarga / Batih</li>
+                        <li>Hubungan (Istri, Suami, Anak, dll.)</li>
+                        <li>Jenis Kelamin Anggota Keluarga</li>
+                        <li>Tanggal Lahir Anggota Keluarga</li>
                     </ul>
                 </div>
 
                 <div class="border-top pt-3 mt-2">
-                    <div class="fw-700 mb-1" style="color:var(--hijau-tua)">File yang tersedia:</div>
+                    <div class="fw-700 mb-1" style="color:var(--hijau-tua)">Contoh File yang Didukung:</div>
                     <div class="small">
                         <i class="bi bi-file-earmark-excel text-success me-1"></i>
-                        Lampiran Rekon Data Karyawan Tahun 2026.xlsx
-                        <span class="badge bg-light text-dark ms-1">35 lembar</span>
+                        SIMKAR_Import_Satu_Sheet_Karyawan_Batih.xlsx
+                        <span class="badge bg-success-subtle text-success ms-1">1 lembar (Karyawan + Batih)</span>
                     </div>
                     <div class="small mt-1">
                         <i class="bi bi-file-earmark-excel text-success me-1"></i>
-                        Data Karyawan Bln Oktober 2026.xlsx
-                        <span class="badge bg-light text-dark ms-1">4 lembar</span>
+                        BATIH.xlsx / REVISI EXPORT BATIH.xlsx
+                        <span class="badge bg-light text-dark ms-1">Format SAP HCM</span>
+                    </div>
+                    <div class="small mt-1">
+                        <i class="bi bi-file-earmark-excel text-success me-1"></i>
+                        Data Karyawan (PKWT, KTNG, Karpim &amp; Karpel)
+                        <span class="badge bg-light text-dark ms-1">Multi-sheet</span>
                     </div>
                 </div>
             </div>

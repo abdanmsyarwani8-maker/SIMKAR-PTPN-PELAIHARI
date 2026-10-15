@@ -157,7 +157,7 @@
             z-index: 1030; display: flex; align-items: center; padding: 0 24px; gap: 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,.05); transition: left 0.3s ease;
         }
-        .topbar .page-title { font-size: 15px; font-weight: 600; color: var(--hijau-tua); flex: 1; }
+        .topbar .page-title { font-size: 16px; font-weight: 700; color: var(--hijau-tua); flex: 1; letter-spacing: -.2px; }
         
         /* Tombol Mobile Khusus Topbar */
         .btn-sidebar-toggle-mobile {
@@ -169,8 +169,25 @@
         .main-content { margin-left: var(--sidebar-w); padding-top: var(--topbar-h); min-height: 100vh; transition: margin-left 0.3s ease; }
         .content-area { padding: 24px; }
 
-        .card { border: 1px solid #e8ede9; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
-        .card-header { background: #fff; border-bottom: 1px solid #e8ede9; border-radius: 14px 14px 0 0 !important; padding: 16px 20px; font-weight: 600; }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #fff; border: 1.5px solid #dce8df; color: #435b4c;
+            border-radius: 20px; padding: 6px 14px; font-size: 12.5px;
+            font-weight: 500; text-decoration: none; transition: all .15s ease;
+        }
+        .btn-back:hover {
+            background: var(--hijau-pale); border-color: var(--hijau-med);
+            color: var(--hijau-tua); transform: translateX(-2px);
+        }
+
+        .card { border: 1px solid #dce8df; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.03); background: #fff; }
+        .card-header {
+            background: #fff; border-bottom: 1px solid #e8ede9;
+            border-radius: 14px 14px 0 0 !important; padding: 14px 20px;
+            font-weight: 700; font-size: 14px; color: var(--hijau-tua);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-header i { font-size: 16px; color: var(--hijau-med); }
         .stat-card { background: #fff; border: 1px solid #e8ede9; border-radius: 14px; padding: 20px; display: flex; align-items: center; gap: 16px; transition: transform .2s, box-shadow .2s; }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
         .stat-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
@@ -180,17 +197,44 @@
         .stat-icon.purple { background: #f3e8fd; color: #6a1b9a; }
         .stat-value { font-size: 26px; font-weight: 800; color: var(--hijau-tua); line-height: 1; }
         .stat-label { font-size: 12px; color: #6b7c70; font-weight: 500; margin-top: 3px; }
-        .btn-hijau { background: var(--hijau-tua); color: #fff; border: none; }
-        .btn-hijau:hover { background: var(--hijau-med); color: #fff; }
-        .btn-hijau-outline { border: 2px solid var(--hijau-tua); color: var(--hijau-tua); background: transparent; }
-        .btn-hijau-outline:hover { background: var(--hijau-tua); color: #fff; }
-        .table-simkar th { background: var(--hijau-pale); color: var(--hijau-tua); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 2px solid #d4e8da; white-space: nowrap; }
-        .table-simkar td { vertical-align: middle; font-size: 13.5px; }
+        .btn-hijau { background: var(--hijau-tua); color: #fff; border: 1.5px solid var(--hijau-tua); font-weight: 600; transition: all .2s; }
+        .btn-hijau:hover { background: var(--hijau-med); border-color: var(--hijau-med); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(26,92,46,.25); }
+        .btn-hijau-outline { border: 1.5px solid var(--hijau-tua); color: var(--hijau-tua); background: transparent; font-weight: 600; transition: all .2s; }
+        .btn-hijau-outline:hover { background: var(--hijau-tua); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(26,92,46,.2); }
+        .table-simkar th { background: var(--hijau-pale); color: var(--hijau-tua); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 2px solid #d4e8da; white-space: nowrap; padding: 12px 14px; }
+        .table-simkar td { vertical-align: middle; font-size: 13px; padding: 11px 14px; }
         .table-simkar tbody tr:hover { background: var(--hijau-pale); }
-        .badge-karpim  { background: #e8f0fe; color: #1a5296; }
-        .badge-karpel  { background: var(--hijau-light); color: var(--hijau-tua); }
-        .badge-pkwt    { background: #fff3e0; color: #e65100; }
-        .badge-papam   { background: #f3e8fd; color: #6a1b9a; }
+        .table-simkar .btn-action {
+            width: 32px; height: 32px; padding: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 8px; font-size: 13px; background: #fff;
+            border: 1px solid #dbe6df; color: #435b4c; transition: all .15s ease;
+            text-decoration: none;
+        }
+        .table-simkar .btn-action:hover {
+            background: var(--hijau-light); color: var(--hijau-tua);
+            border-color: var(--hijau-med); transform: translateY(-1px);
+        }
+        .table-simkar .btn-action.btn-action-danger:hover {
+            background: #fde8e8; color: #c0392b; border-color: #f5c2c2;
+        }
+        .badge-karpim, .badge-karpel, .badge-pkwt, .badge-ktng, .badge-papam {
+            font-weight: 600; border-radius: 6px; padding: 4px 9px; font-size: 11px;
+            display: inline-flex; align-items: center; gap: 4px; letter-spacing: .2px;
+        }
+        .badge-karpim  { background: #e8f0fe; color: #1a5296; border: 1px solid #c6dafc; }
+        .badge-karpel  { background: var(--hijau-light); color: var(--hijau-tua); border: 1px solid #c8e6c9; }
+        .badge-pkwt    { background: #fff3e0; color: #c46616; border: 1px solid #ffe0b2; }
+        .badge-ktng    { background: #e0f2f1; color: #00695c; border: 1px solid #b2dfdb; }
+        .badge-papam   { background: #f3e8fd; color: #6a1b9a; border: 1px solid #e1bee7; }
+        .form-control, .form-select {
+            border: 1.5px solid #d4e8da; border-radius: 10px; font-size: 13px;
+            padding: 8px 12px; transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--hijau-med); box-shadow: 0 0 0 3px rgba(76, 175, 114, 0.18);
+            outline: none;
+        }
         .filter-panel { background: #fff; border: 1px solid #e8ede9; border-radius: 14px; overflow: hidden; }
         .filter-group { padding: 14px 16px; border-bottom: 1px solid #f0f4f1; }
         .filter-group:last-child { border-bottom: none; }
@@ -206,9 +250,47 @@
         .alert { border-radius: 10px; border: none; font-size: 13.5px; }
         .alert-success { background: var(--hijau-light); color: var(--hijau-tua); }
         .alert-danger  { background: #fce8e8; color: #c0392b; }
+        .fw-400 { font-weight: 400 !important; }
+        .fw-500 { font-weight: 500 !important; }
+        .fw-600 { font-weight: 600 !important; }
+        .fw-700 { font-weight: 700 !important; }
+        .fw-800 { font-weight: 800 !important; }
+
+        .modal-content { border-radius: 14px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.12); overflow: hidden; }
+        .modal-header { background: var(--hijau-pale); border-bottom: 1px solid #d4e8da; padding: 14px 20px; }
+        .modal-header .modal-title { font-weight: 700; font-size: 14.5px; color: var(--hijau-tua); display: flex; align-items: center; gap: 8px; }
+        .modal-header .modal-title i { color: var(--hijau-med); }
+        .modal-footer { border-top: 1px solid #e8ede9; padding: 12px 20px; }
+
         .empty-state { text-align: center; padding: 60px 20px; color: #8ba390; }
         .empty-state i { font-size: 56px; margin-bottom: 16px; opacity: .4; }
         .empty-state h5 { font-weight: 600; color: #4a6650; }
+
+        .pagination { margin: 0; gap: 4px; }
+        .page-item .page-link {
+            border-radius: 8px !important;
+            border: 1px solid #d4e8da;
+            color: var(--hijau-tua);
+            font-size: 12.5px;
+            font-weight: 500;
+            padding: 6px 12px;
+            transition: all .15s ease;
+        }
+        .page-item .page-link:hover {
+            background: var(--hijau-pale);
+            border-color: var(--hijau-med);
+            color: var(--hijau-tua);
+        }
+        .page-item.active .page-link {
+            background: var(--hijau-tua);
+            border-color: var(--hijau-tua);
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(26,92,46,.25);
+        }
+        .page-item.disabled .page-link {
+            border-color: #e5ece7;
+            color: #9cb0a2;
+        }
 
         /* ── RESPONSIVE HP ──────────────────────────── */
         @media (max-width: 991px) {
@@ -263,7 +345,7 @@
             <i class="bi bi-grid-fill"></i> <span class="nav-link-text">Dashboard</span>
         </a>
 
-        <a href="{{ route('employees.index') }}" class="nav-link {{ request()->routeIs('employees.*') && !request()->routeIs('employees.import*') ? 'active' : '' }}">
+        <a href="{{ route('employees.index') }}" class="nav-link {{ request()->routeIs('employees.*') && !request()->routeIs('employees.import*') && !request()->routeIs('employees.export*') ? 'active' : '' }}">
             <i class="bi bi-people-fill"></i> <span class="nav-link-text">Data Karyawan</span>
         </a>
 
@@ -276,18 +358,21 @@
         <a href="{{ route('employees.import.form') }}" class="nav-link {{ request()->routeIs('employees.import*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-arrow-up-fill"></i> <span class="nav-link-text">Import Excel</span>
         </a>
+        <a href="{{ route('employees.export.form') }}" class="nav-link {{ request()->routeIs('employees.export*') ? 'active' : '' }}">
+            <i class="bi bi-file-earmark-arrow-down-fill"></i> <span class="nav-link-text">Export Excel</span>
+        </a>
         @endif
         @endauth
 
         <div class="nav-section-label">Akun</div>
         <a href="{{ route('profile.edit') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}">
-            <i class="bi bi-person-gear"></i> <span class="nav-link-text">Profil Saya</span>
+            <i class="bi bi-person-fill-gear"></i> <span class="nav-link-text">Profil Saya</span>
         </a>
 
         <form method="POST" action="{{ route('logout') }}" class="d-inline w-100 m-0 p-0">
             @csrf
             <button type="submit" class="nav-link w-100 text-start border-0 bg-transparent">
-                <i class="bi bi-box-arrow-left"></i> <span class="nav-link-text">Keluar</span>
+                <i class="bi bi-box-arrow-right"></i> <span class="nav-link-text">Keluar</span>
             </button>
         </form>
     </nav>
@@ -322,7 +407,7 @@
             <i class="bi bi-chevron-down" style="font-size:10px"></i>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width:180px">
-            <li><a class="dropdown-item small" href="{{ route('profile.edit') }}"><i class="bi bi-person me-2"></i>Profil Saya</a></li>
+            <li><a class="dropdown-item small" href="{{ route('profile.edit') }}"><i class="bi bi-person-fill-gear me-2"></i>Profil Saya</a></li>
             @if(auth()->user()->isAdmin())
             <li><a class="dropdown-item small" href="{{ route('users.index') }}"><i class="bi bi-shield-lock-fill me-2"></i>Pengguna</a></li>
             @endif
@@ -330,7 +415,7 @@
             <li>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="dropdown-item small text-danger"><i class="bi bi-box-arrow-left me-2"></i>Keluar</button>
+                    <button type="submit" class="dropdown-item small text-danger"><i class="bi bi-box-arrow-right me-2"></i>Keluar</button>
                 </form>
             </li>
         </ul>

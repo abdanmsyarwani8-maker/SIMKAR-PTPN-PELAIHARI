@@ -4,14 +4,14 @@
 
 @section('content')
 <div class="mb-3">
-    <a href="{{ route('employees.index') }}" class="btn btn-sm btn-light rounded-pill">
-        <i class="bi bi-arrow-left me-1"></i> Kembali
+    <a href="{{ route('employees.index') }}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Kembali ke Data Karyawan
     </a>
 </div>
 
 <div class="card">
     <div class="card-header">
-        <i class="bi bi-person-plus-fill me-2 text-success"></i>
+        <i class="bi bi-person-plus-fill me-2"></i>
         Formulir Tambah Data Karyawan
     </div>
     <div class="card-body p-4">
@@ -34,7 +34,7 @@
                 <button type="submit" class="btn btn-hijau rounded-pill px-4">
                     <i class="bi bi-check-lg me-1"></i> Simpan Data
                 </button>
-                <a href="{{ route('employees.index') }}" class="btn btn-light rounded-pill px-4">
+                <a href="{{ route('employees.index') }}" class="btn btn-light rounded-pill px-4 border">
                     Batal
                 </a>
             </div>

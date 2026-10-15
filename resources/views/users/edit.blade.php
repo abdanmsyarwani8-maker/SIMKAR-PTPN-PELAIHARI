@@ -2,9 +2,13 @@
 @section('title', 'Edit Pengguna')
 @section('page-title', 'Edit Data Pengguna')
 @section('content')
-<div class="mb-3"><a href="{{ route('users.index') }}" class="btn btn-sm btn-light rounded-pill"><i class="bi bi-arrow-left me-1"></i> Kembali</a></div>
+<div class="mb-3">
+    <a href="{{ route('users.index') }}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Kembali ke Pengguna
+    </a>
+</div>
 <div class="card" style="max-width:560px">
-    <div class="card-header"><i class="bi bi-pencil-square me-2 text-success"></i>Edit: {{ $user->name }}</div>
+    <div class="card-header"><i class="bi bi-pencil-square me-2"></i>Edit Pengguna: {{ $user->name }}</div>
     <div class="card-body p-4">
         @if($errors->any())<div class="alert alert-danger mb-3"><ul class="mb-0 ps-3">@foreach($errors->all() as $e)<li style="font-size:13px">{{ $e }}</li>@endforeach</ul></div>@endif
         <form method="POST" action="{{ route('users.update', $user) }}">
@@ -28,8 +32,8 @@
                 <label class="form-check-label fw-600" for="isActive" style="font-size:13px">Akun Aktif</label>
             </div>
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-hijau rounded-pill px-4"><i class="bi bi-check me-1"></i>Perbarui</button>
-                <a href="{{ route('users.index') }}" class="btn btn-light rounded-pill px-4">Batal</a>
+                <button type="submit" class="btn btn-hijau rounded-pill px-4"><i class="bi bi-check-lg me-1"></i> Perbarui Data</button>
+                <a href="{{ route('users.index') }}" class="btn btn-light rounded-pill px-4 border">Batal</a>
             </div>
         </form>
     </div>

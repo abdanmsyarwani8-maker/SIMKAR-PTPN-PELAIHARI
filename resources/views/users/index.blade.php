@@ -9,14 +9,14 @@
         <div style="font-size:12.5px;color:#6b7c70">Total: {{ $users->total() }} pengguna terdaftar</div>
     </div>
     <a href="{{ route('users.create') }}" class="btn btn-hijau btn-sm rounded-pill px-3">
-        <i class="bi bi-person-plus me-1"></i> Tambah Pengguna
+        <i class="bi bi-person-plus-fill me-1"></i> Tambah Pengguna
     </a>
 </div>
 
 <div class="card">
     @if($users->isEmpty())
     <div class="empty-state">
-        <i class="bi bi-people"></i>
+        <i class="bi bi-people-fill"></i>
         <h5>Belum ada pengguna</h5>
     </div>
     @else
@@ -63,15 +63,15 @@
                     <td style="font-size:12px;color:#6b7c70">{{ $user->created_at->format('d M Y') }}</td>
                     <td>
                         <div class="d-flex gap-1">
-                            <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-light rounded-pill" title="Edit">
-                                <i class="bi bi-pencil"></i>
+                            <a href="{{ route('users.edit', $user) }}" class="btn-action" title="Edit Pengguna">
+                                <i class="bi bi-pencil-square"></i>
                             </a>
                             @if($user->id !== auth()->id())
-                            <form method="POST" action="{{ route('users.destroy', $user) }}"
+                            <form method="POST" action="{{ route('users.destroy', $user) }}" class="d-inline m-0 p-0"
                                   onsubmit="return confirm('Hapus pengguna {{ addslashes($user->name) }}?')">
                                 @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-light rounded-pill text-danger" title="Hapus">
-                                    <i class="bi bi-trash"></i>
+                                <button type="submit" class="btn-action btn-action-danger" title="Hapus Pengguna">
+                                    <i class="bi bi-trash3"></i>
                                 </button>
                             </form>
                             @endif

@@ -26,19 +26,9 @@
             </ul>
         </div>
 
-        <div class="d-none flex-sm-fill d-sm-flex align-items-sm-center justify-content-sm-between">
-            <div class="small text-muted">
-                {!! __('Showing') !!}
-                <span class="fw-semibold">{{ $paginator->firstItem() }}</span>
-                {!! __('to') !!}
-                <span class="fw-semibold">{{ $paginator->lastItem() }}</span>
-                {!! __('of') !!}
-                <span class="fw-semibold">{{ $paginator->total() }}</span>
-                {!! __('results') !!}
-            </div>
-
+        <div class="d-none flex-sm-fill d-sm-flex align-items-sm-center justify-content-sm-end">
             <div>
-                <ul class="pagination">
+                <ul class="pagination mb-0">
                     {{-- Previous Page Link --}}
                     @if ($paginator->onFirstPage())
                         <li class="page-item disabled" aria-disabled="true" aria-label="@lang('pagination.previous')">
