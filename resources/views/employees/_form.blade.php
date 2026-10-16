@@ -94,8 +94,9 @@
         <label class="form-label fw-600" style="font-size:13px">Status Karyawan</label>
         @php
             $currentStatus = old('status_karyawan', $employee->status_karyawan ?? '');
-            if (in_array($currentStatus, ['Karpim', 'Karpel', 'Karpel - Tetap', 'Karpim - Tetap', 'Karpim & Karpel'])) {
-                $currentStatus = 'Karpim & Karpel';
+            // Map nilai lama gabungan ke Karpel (fallback, jika ada data lama)
+            if ($currentStatus === 'Karpim & Karpel') {
+                $currentStatus = 'Karpel';
             }
         @endphp
         <select name="status_karyawan" id="status_karyawan_select" class="form-select" onchange="togglePkwtInput()">

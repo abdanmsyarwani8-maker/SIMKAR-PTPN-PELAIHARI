@@ -349,6 +349,10 @@
             <i class="bi bi-people-fill"></i> <span class="nav-link-text">Data Karyawan</span>
         </a>
 
+        <a href="{{ route('employees.export.form') }}" class="nav-link {{ request()->routeIs('employees.export*') ? 'active' : '' }}">
+            <i class="bi bi-file-earmark-arrow-down-fill"></i> <span class="nav-link-text">Export Excel</span>
+        </a>
+
         @auth
         @if(auth()->user()->isAdmin())
         <div class="nav-section-label">Administrasi</div>
@@ -360,9 +364,6 @@
         </a>
         <a href="{{ route('employees.import.history') }}" class="nav-link {{ request()->routeIs('employees.import.history*') || request()->routeIs('employees.import.result') ? 'active' : '' }}">
             <i class="bi bi-clock-history"></i> <span class="nav-link-text">Riwayat Import</span>
-        </a>
-        <a href="{{ route('employees.export.form') }}" class="nav-link {{ request()->routeIs('employees.export*') ? 'active' : '' }}">
-            <i class="bi bi-file-earmark-arrow-down-fill"></i> <span class="nav-link-text">Export Excel</span>
         </a>
         @endif
         @endauth

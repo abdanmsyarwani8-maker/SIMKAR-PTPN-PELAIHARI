@@ -294,6 +294,45 @@ class Employee extends Model
         return $query->whereIn('sumber_lembar', $lembar);
     }
 
+    /**
+     * Filter berdasarkan lokasi alamat (Lokal = Kalimantan Selatan, Non-Lokal = di luar).
+     *
+     * @param  array<string>|null  $lokasi
+     */
+    public function scopeFilterLokasi(Builder $query, ?array $lokasi): Builder
+    {
+        if (empty($lokasi)) {
+            return $query;
+        }
+
+        $wantLokal = in_array('Lokal (Kalimantan Selatan)', $lokasi);
+        $wantNonLokal = in_array('Non-Lokal (Luar Kalimantan Selatan)', $lokasi);
+
+        if ($wantLokal && $wantNonLokal) {
+            return $query; // Keduanya dipilih → tidak perlu filter
+        }
+
+        $keywords = static::kalselKeywords();
+
+        if ($wantLokal) {
+            return $query->where(function ($q) use ($keywords) {
+                foreach ($keywords as $kw) {
+                    $q->orWhere('alamat', 'like', "%{$kw}%");
+                }
+            });
+        }
+
+        if ($wantNonLokal) {
+            return $query->where(function ($q) use ($keywords) {
+                foreach ($keywords as $kw) {
+                    $q->where('alamat', 'not like', "%{$kw}%");
+                }
+            });
+        }
+
+        return $query;
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
@@ -304,5 +343,37 @@ class Employee extends Model
     public static function rentangUsiaOptions(): array
     {
         return ['< 25 Tahun', '25–34 Tahun', '35–44 Tahun', '45–54 Tahun', '≥ 55 Tahun'];
+    }
+
+    /**
+     * Kata kunci nama kota/kabupaten/kecamatan di Kalimantan Selatan
+     * yang digunakan untuk mendeteksi alamat lokal.
+     *
+     * @return array<string>
+     */
+    public static function kalselKeywords(): array
+    {
+        return [
+            // Kota & Kabupaten
+            'Banjarmasin', 'Banjarbaru', 'Banjar', 'Martapura',
+            'Pelaihari', 'Tala', 'Tanah Laut',
+            'Kotabaru', 'Batulicin', 'Tanah Bumbu',
+            'Kandangan', 'Hulu Sungai Selatan',
+            'Amuntai', 'Hulu Sungai Utara',
+            'Barabai', 'Hulu Sungai Tengah',
+            'Rantau', 'Tapin',
+            'Marabahan', 'Barito Kuala', 'Batola',
+            'Pelaihari', 'Jorong', 'Takisung', 'Bajuin',
+            'Pagatan', 'Satui', 'Angsana',
+            'Binuang', 'Tambang Ulang',
+            // Kecamatan umum Kalsel
+            'Bati-Bati', 'Kurau', 'Batu Ampar',
+            'Sungai Tabuk', 'Kertak Hanyar', 'Gambut',
+            'Landasan Ulin', 'Liang Anggang',
+            'Astambul', 'Karang Intan',
+            'Lok Baintan',
+            // Singkatan umum
+            'Kalsel', 'Kalimantan Sel',
+        ];
     }
 }

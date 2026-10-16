@@ -27,7 +27,8 @@ class EmployeeController extends Controller
             ->filterJenisKelamin($request->get('jenis_kelamin'))
             ->filterAgama($request->get('agama'))
             ->filterRentangUsia($request->get('rentang_usia'))
-            ->filterSumberLembar($request->get('sumber_lembar'));
+            ->filterSumberLembar($request->get('sumber_lembar'))
+            ->filterLokasi($request->get('lokasi'));
 
         // Sorting
         $sortBy = $request->get('sort', 'nama');
@@ -48,18 +49,19 @@ class EmployeeController extends Controller
         $jenisKelaminList = ['Laki-Laki', 'Perempuan'];
         $rentangUsiaList = Employee::rentangUsiaOptions();
         $sumberList = Employee::active()->distinct()->pluck('sumber_lembar')->filter()->sort()->values();
+        $lokasiList = ['Lokal (Kalimantan Selatan)', 'Non-Lokal (Luar Kalimantan Selatan)'];
 
         // Hitung filter aktif
         $activeFilters = collect([
             'bagian_ids', 'jabatan_ids', 'statuses',
-            'jenis_kelamin', 'agama', 'rentang_usia', 'sumber_lembar',
+            'jenis_kelamin', 'agama', 'rentang_usia', 'sumber_lembar', 'lokasi',
         ])->filter(fn ($key) => $request->filled($key))->count();
         $activeFilters += $request->filled('q') ? 1 : 0;
 
         return view('employees.index', compact(
             'employees', 'totalHasil', 'activeFilters',
             'bagians', 'jabatans', 'statuses',
-            'agamaList', 'jenisKelaminList', 'rentangUsiaList', 'sumberList'
+            'agamaList', 'jenisKelaminList', 'rentangUsiaList', 'sumberList', 'lokasiList'
         ));
     }
 
@@ -80,7 +82,7 @@ class EmployeeController extends Controller
     {
         $bagians = Bagian::orderBy('nama_bagian')->get();
         $jabatans = Jabatan::orderBy('nama_jabatan')->get();
-        $statuses = ['PKWT', 'Karpim & Karpel', 'KTNG'];
+        $statuses = ['PKWT', 'Karpim', 'Karpel', 'KTNG'];
 
         return view('employees.create', compact('bagians', 'jabatans', 'statuses'));
     }
@@ -122,7 +124,7 @@ class EmployeeController extends Controller
     {
         $bagians = Bagian::orderBy('nama_bagian')->get();
         $jabatans = Jabatan::orderBy('nama_jabatan')->get();
-        $statuses = ['PKWT', 'Karpim & Karpel', 'KTNG'];
+        $statuses = ['PKWT', 'Karpim', 'Karpel', 'KTNG'];
 
         return view('employees.edit', compact('employee', 'bagians', 'jabatans', 'statuses'));
     }

@@ -26,6 +26,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ── Data Karyawan ─────────────────────────────────────────
     Route::get('/karyawan', [EmployeeController::class, 'index'])->name('employees.index');
 
+    // ── Export Excel (Dapat diakses Admin maupun User) ────────
+    Route::get('/karyawan/export', [EmployeeExportController::class, 'showForm'])->name('employees.export.form');
+    Route::match(['get', 'post'], '/karyawan/export/download', [EmployeeExportController::class, 'export'])->name('employees.export');
+
     // ── Operasi Karyawan: Hanya Admin ────────────────────────
     Route::middleware('admin')->group(function () {
         Route::get('/karyawan/tambah', [EmployeeController::class, 'create'])->name('employees.create');
@@ -40,9 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/karyawan/{employee}/keluarga/{family}', [EmployeeFamilyController::class, 'update'])->name('employees.families.update');
         Route::delete('/karyawan/{employee}/keluarga/{family}', [EmployeeFamilyController::class, 'destroy'])->name('employees.families.destroy');
 
-        // ── Import & Export Excel ─────────────────────────────
-        Route::get('/karyawan/export', [EmployeeExportController::class, 'showForm'])->name('employees.export.form');
-        Route::match(['get', 'post'], '/karyawan/export/download', [EmployeeExportController::class, 'export'])->name('employees.export');
+        // ── Import Excel: Hanya Admin ─────────────────────────
         Route::get('/karyawan/import/form', [EmployeeImportController::class, 'showForm'])->name('employees.import.form');
         Route::get('/karyawan/import/riwayat', [EmployeeImportController::class, 'history'])->name('employees.import.history');
         Route::get('/karyawan/import/riwayat/{history}', [EmployeeImportController::class, 'showHistory'])->name('employees.import.history.show');
@@ -52,6 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/karyawan/import/hasil', [EmployeeImportController::class, 'result'])->name('employees.import.result');
 
         // ── Manajemen Pengguna: Hanya Admin ──────────────────
+        Route::get('/pengguna/export', [UserManagementController::class, 'export'])->name('users.export');
         Route::resource('/pengguna', UserManagementController::class)
             ->names([
                 'index' => 'users.index',

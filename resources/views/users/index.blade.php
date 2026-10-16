@@ -7,9 +7,14 @@
     <div style="font-size:13px;color:#55695c;font-weight:500;">
         Total: <strong class="text-dark">{{ $users->total() }}</strong> pengguna terdaftar
     </div>
-    <a href="{{ route('users.create') }}" class="btn btn-hijau btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
-        <i class="bi bi-person-plus-fill"></i> Tambah Pengguna
-    </a>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <a href="{{ route('users.export') }}" class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
+            <i class="bi bi-file-earmark-excel-fill"></i> Export Excel
+        </a>
+        <a href="{{ route('users.create') }}" class="btn btn-hijau btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
+            <i class="bi bi-person-plus-fill"></i> Tambah Pengguna
+        </a>
+    </div>
 </div>
 
 <div class="card">

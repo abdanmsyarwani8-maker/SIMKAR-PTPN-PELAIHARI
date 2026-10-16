@@ -23,10 +23,8 @@ class EmployeeExportController extends Controller
     {
         $countPkwt = Employee::where('status_karyawan', 'like', '%PKWT%')->active()->count();
         $countKtng = Employee::where('status_karyawan', 'like', '%KTNG%')->active()->count();
-        $countKarpim = Employee::where(function ($q) {
-            $q->where('status_karyawan', 'like', '%Karpim%')
-                ->orWhere('status_karyawan', 'like', '%Karpel%');
-        })->active()->count();
+        $countKarpim = Employee::where('status_karyawan', 'Karpim')->active()->count();
+        $countKarpel = Employee::where('status_karyawan', 'Karpel')->active()->count();
         $totalEmployee = Employee::active()->count();
         $totalFamily = EmployeeFamily::count();
 
@@ -34,6 +32,7 @@ class EmployeeExportController extends Controller
             'countPkwt',
             'countKtng',
             'countKarpim',
+            'countKarpel',
             'totalEmployee',
             'totalFamily'
         ));
@@ -44,12 +43,12 @@ class EmployeeExportController extends Controller
      */
     public function export(Request $request): Response
     {
-        $categories = $request->input('categories', ['PKWT', 'Karpim & Karpel', 'KTNG']);
+        $categories = $request->input('categories', ['PKWT', 'Karpim', 'Karpel', 'KTNG']);
         if (! is_array($categories) || empty($categories)) {
-            $categories = ['PKWT', 'Karpim & Karpel', 'KTNG'];
+            $categories = ['PKWT', 'Karpim', 'Karpel', 'KTNG'];
         }
 
-        $allowedCategories = ['PKWT', 'Karpim & Karpel', 'KTNG'];
+        $allowedCategories = ['PKWT', 'Karpim', 'Karpel', 'KTNG'];
         $selectedCategories = array_values(array_intersect($allowedCategories, $categories));
         if (empty($selectedCategories)) {
             $selectedCategories = $allowedCategories;
@@ -125,11 +124,10 @@ class EmployeeExportController extends Controller
                 $query->where('status_karyawan', 'like', '%PKWT%');
             } elseif ($category === 'KTNG') {
                 $query->where('status_karyawan', 'like', '%KTNG%');
-            } elseif ($category === 'Karpim & Karpel') {
-                $query->where(function ($q) {
-                    $q->where('status_karyawan', 'like', '%Karpim%')
-                        ->orWhere('status_karyawan', 'like', '%Karpel%');
-                });
+            } elseif ($category === 'Karpim') {
+                $query->where('status_karyawan', 'Karpim');
+            } elseif ($category === 'Karpel') {
+                $query->where('status_karyawan', 'Karpel');
             }
 
             $employees = $query->orderBy('nama')->get();

@@ -124,21 +124,40 @@
                             </div>
                         </label>
 
-                        {{-- Category Card: Karpim & Karpel --}}
+                        {{-- Category Card: Karpim --}}
                         <label class="category-card selected" for="cat_karpim" id="card_karpim">
-                            <input class="form-check-input export-cat-check" type="checkbox" name="categories[]" value="Karpim & Karpel" id="cat_karpim" checked onchange="updateSelectionState()">
+                            <input class="form-check-input export-cat-check" type="checkbox" name="categories[]" value="Karpim" id="cat_karpim" checked onchange="updateSelectionState()">
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
                                     <div>
-                                        <span class="badge badge-karpim me-2">Karpim &amp; Karpel</span>
-                                        <strong style="color:var(--hijau-tua);font-size:14px">Karyawan Pimpinan &amp; Pelaksana</strong>
+                                        <span class="badge badge-karpim me-2">Karpim</span>
+                                        <strong style="color:var(--hijau-tua);font-size:14px">Karyawan Pimpinan</strong>
                                     </div>
                                     <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle px-2 py-1" style="font-size:12px">
                                         {{ number_format($countKarpim) }} Karyawan
                                     </span>
                                 </div>
                                 <div class="text-muted mt-1" style="font-size:12.5px">
-                                    Karyawan pimpinan dan pelaksana tetap PTPN IV Regional V Kebun Pelaihari.
+                                    Karyawan pimpinan tetap PTPN IV Regional V Kebun Pelaihari.
+                                </div>
+                            </div>
+                        </label>
+
+                        {{-- Category Card: Karpel --}}
+                        <label class="category-card selected" for="cat_karpel" id="card_karpel">
+                            <input class="form-check-input export-cat-check" type="checkbox" name="categories[]" value="Karpel" id="cat_karpel" checked onchange="updateSelectionState()">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                                    <div>
+                                        <span class="badge badge-karpel me-2">Karpel</span>
+                                        <strong style="color:var(--hijau-tua);font-size:14px">Karyawan Pelaksana</strong>
+                                    </div>
+                                    <span class="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1" style="font-size:12px">
+                                        {{ number_format($countKarpel) }} Karyawan
+                                    </span>
+                                </div>
+                                <div class="text-muted mt-1" style="font-size:12.5px">
+                                    Karyawan pelaksana tetap PTPN IV Regional V Kebun Pelaihari.
                                 </div>
                             </div>
                         </label>

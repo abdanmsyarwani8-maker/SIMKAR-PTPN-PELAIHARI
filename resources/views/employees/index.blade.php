@@ -58,6 +58,10 @@
         </button>
         @endif @endauth
 
+        <a href="{{ route('employees.export.form') }}" class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
+            <i class="bi bi-file-earmark-arrow-down-fill"></i> Export Excel
+        </a>
+
         <button class="btn btn-hijau btn-sm rounded-pill px-3 filter-toggle-btn shadow-sm d-inline-flex align-items-center gap-1"
                 type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" id="filterToggleBtn">
             <i class="bi bi-funnel-fill"></i> Filter
@@ -210,6 +214,24 @@
                 </div>
                 @endif
 
+                {{-- Filter Lokasi Alamat --}}
+                <div class="filter-group">
+                    <div class="filter-group-title">
+                        Lokasi Alamat
+                        @if(request('lokasi')) <span class="filter-badge">{{ count(request('lokasi')) }}</span> @endif
+                    </div>
+                    <div class="filter-list">
+                        @foreach($lokasiList as $lok)
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="lokasi[]"
+                                   value="{{ $lok }}" id="lok{{ Str::slug($lok) }}"
+                                   {{ in_array($lok, request('lokasi',[]))?'checked':'' }}>
+                            <label class="form-check-label" for="lok{{ Str::slug($lok) }}">{{ $lok }}</label>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
                 {{-- Tombol Selesai --}}
                 <div class="p-3">
                     <button type="button" class="btn btn-hijau w-100 rounded-pill shadow-sm" data-bs-toggle="collapse" data-bs-target="#filterPanel">
@@ -296,6 +318,12 @@
                 <span class="active-filter-chip">
                     Sumber ({{ count(request('sumber_lembar')) }})
                     <a href="{{ request()->fullUrlWithoutQuery(['sumber_lembar']) }}" style="color:inherit" onclick="removeFilterParam(event, 'sumber_lembar')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('lokasi'))
+                <span class="active-filter-chip">
+                    Lokasi: {{ implode(', ', array_map(fn($l) => str_contains($l,'Non') ? 'Non-Lokal' : 'Lokal', request('lokasi'))) }}
+                    <a href="{{ request()->fullUrlWithoutQuery(['lokasi']) }}" style="color:inherit" onclick="removeFilterParam(event, 'lokasi')"><i class="bi bi-x-circle"></i></a>
                 </span>
                 @endif
                 <a href="{{ route('employees.index') }}" class="btn btn-sm btn-outline-danger rounded-pill" style="font-size:11px" onclick="resetFiltersAjax(event)">
