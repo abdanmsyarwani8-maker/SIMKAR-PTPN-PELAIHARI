@@ -82,7 +82,7 @@ class EmployeeController extends Controller
     {
         $bagians = Bagian::orderBy('nama_bagian')->get();
         $jabatans = Jabatan::orderBy('nama_jabatan')->get();
-        $statuses = ['PKWT', 'Karpim', 'Karpel', 'KTNG'];
+        $statuses = ['PKWT', 'Karpim & Karpel', 'KTNG'];
 
         return view('employees.create', compact('bagians', 'jabatans', 'statuses'));
     }
@@ -124,7 +124,7 @@ class EmployeeController extends Controller
     {
         $bagians = Bagian::orderBy('nama_bagian')->get();
         $jabatans = Jabatan::orderBy('nama_jabatan')->get();
-        $statuses = ['PKWT', 'Karpim', 'Karpel', 'KTNG'];
+        $statuses = ['PKWT', 'Karpim & Karpel', 'KTNG'];
 
         return view('employees.edit', compact('employee', 'bagians', 'jabatans', 'statuses'));
     }

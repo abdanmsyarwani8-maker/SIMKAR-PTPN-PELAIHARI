@@ -37,11 +37,15 @@ class UserManagementController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
             'role' => 'required|in:admin,user',
         ], [
-            'name.required' => 'Nama wajib diisi.',
-            'email.required' => 'Email wajib diisi.',
-            'email.unique' => 'Email sudah digunakan.',
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.unique' => 'Alamat email sudah digunakan.',
             'password.required' => 'Kata sandi wajib diisi.',
-            'role.required' => 'Peran wajib dipilih.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok. Pastikan kedua kolom kata sandi terisi sama persis.',
+            'password.min' => 'Kata sandi terlalu pendek. Minimal harus 8 karakter.',
+            'password.letters' => 'Kata sandi harus mengandung minimal 1 huruf.',
+            'password.numbers' => 'Kata sandi harus mengandung minimal 1 angka.',
+            'role.required' => 'Peran pengguna wajib dipilih.',
         ]);
 
         User::create([
@@ -63,19 +67,33 @@ class UserManagementController extends Controller
 
     public function update(Request $request, User $pengguna)
     {
+        $request->merge([
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($pengguna->id)],
             'role' => 'required|in:admin,user',
             'is_active' => 'boolean',
             'password' => ['nullable', 'confirmed', Password::min(8)->letters()->numbers()],
+        ], [
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.unique' => 'Alamat email sudah terdaftar untuk pengguna lain.',
+            'role.required' => 'Peran pengguna wajib dipilih.',
+            'is_active.boolean' => 'Status aktif tidak valid.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok dengan kata sandi baru. Pastikan kedua kolom kata sandi terisi sama persis.',
+            'password.min' => 'Kata sandi baru terlalu pendek. Minimal harus 8 karakter.',
+            'password.letters' => 'Kata sandi baru harus mengandung minimal 1 huruf.',
+            'password.numbers' => 'Kata sandi baru harus mengandung minimal 1 angka.',
         ]);
 
         $pengguna->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'role' => $validated['role'],
-            'is_active' => $request->boolean('is_active'),
+            'is_active' => $validated['is_active'],
         ]);
 
         if (! empty($validated['password'])) {

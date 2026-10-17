@@ -54,13 +54,9 @@
 
         <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
                 data-bs-toggle="modal" data-bs-target="#modalHapusSemuaData">
-            <i class="bi bi-trash3"></i> Hapus Semua Data
+            <i class="bi bi-trash3-fill"></i> Hapus Semua Data Karyawan
         </button>
         @endif @endauth
-
-        <a href="{{ route('employees.export.form') }}" class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1">
-            <i class="bi bi-file-earmark-arrow-down-fill"></i> Export Excel
-        </a>
 
         <button class="btn btn-hijau btn-sm rounded-pill px-3 filter-toggle-btn shadow-sm d-inline-flex align-items-center gap-1"
                 type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" id="filterToggleBtn">

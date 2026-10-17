@@ -48,10 +48,10 @@ class EmployeeExportController extends Controller
             $categories = ['PKWT', 'Karpim', 'Karpel', 'KTNG'];
         }
 
-        $allowedCategories = ['PKWT', 'Karpim', 'Karpel', 'KTNG'];
+        $allowedCategories = ['PKWT', 'Karpim', 'Karpel', 'Karpim & Karpel', 'KTNG'];
         $selectedCategories = array_values(array_intersect($allowedCategories, $categories));
         if (empty($selectedCategories)) {
-            $selectedCategories = $allowedCategories;
+            $selectedCategories = ['PKWT', 'Karpim', 'Karpel', 'KTNG'];
         }
 
         $includeFamily = $request->boolean('include_family', true);
@@ -124,10 +124,16 @@ class EmployeeExportController extends Controller
                 $query->where('status_karyawan', 'like', '%PKWT%');
             } elseif ($category === 'KTNG') {
                 $query->where('status_karyawan', 'like', '%KTNG%');
+            } elseif ($category === 'Karpim & Karpel') {
+                $query->where(function ($q) {
+                    $q->where('status_karyawan', 'Karpim & Karpel')
+                        ->orWhere('status_karyawan', 'like', '%Karpim%')
+                        ->orWhere('status_karyawan', 'like', '%Karpel%');
+                });
             } elseif ($category === 'Karpim') {
-                $query->where('status_karyawan', 'Karpim');
+                $query->where('status_karyawan', 'like', '%Karpim%');
             } elseif ($category === 'Karpel') {
-                $query->where('status_karyawan', 'Karpel');
+                $query->where('status_karyawan', 'like', '%Karpel%');
             }
 
             $employees = $query->orderBy('nama')->get();

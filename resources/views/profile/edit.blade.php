@@ -222,6 +222,21 @@
                 </div>
                 @endif
 
+                @if($errors->updatePassword->any())
+                <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        <strong>Gagal memperbarui kata sandi:</strong>
+                    </div>
+                    <ul class="mb-0 ps-3" style="font-size:13px">
+                        @foreach($errors->updatePassword->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                @endif
+
                 <form method="POST" action="{{ route('password.update') }}">
                     @csrf
                     @method('PUT')
@@ -252,7 +267,8 @@
                             <i class="bi bi-lock-fill input-icon-start"></i>
                             <input type="password" name="password" id="inputNewPassword" 
                                    class="form-control @error('password', 'updatePassword') is-invalid @enderror" 
-                                   placeholder="Minimal 8 karakter kombinasi" autocomplete="new-password" required>
+                                   placeholder="Minimal 8 karakter kombinasi" autocomplete="new-password" 
+                                   oninput="checkProfilePasswordMatch()" required>
                             <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('inputNewPassword', this)" aria-label="Lihat kata sandi">
                                 <i class="bi bi-eye"></i>
                             </button>
@@ -260,6 +276,9 @@
                         @error('password', 'updatePassword')
                         <div class="text-danger mt-1 small"><i class="bi bi-exclamation-circle me-1"></i>{{ $message }}</div>
                         @enderror
+                        <div class="form-text text-muted mt-1" style="font-size:12px;">
+                            <i class="bi bi-info-circle text-success me-1"></i><strong>Petunjuk:</strong> Minimal 8 karakter, wajib kombinasi huruf dan angka (cth: <code>Pelaihari2026</code>).
+                        </div>
                     </div>
 
                     <div class="mb-4">
@@ -269,11 +288,19 @@
                         <div class="input-icon-group">
                             <i class="bi bi-shield-check input-icon-start"></i>
                             <input type="password" name="password_confirmation" id="inputConfirmPassword" 
-                                   class="form-control" 
-                                   placeholder="Ketik ulang kata sandi baru" autocomplete="new-password" required>
+                                   class="form-control @error('password_confirmation', 'updatePassword') is-invalid @enderror" 
+                                   placeholder="Ketik ulang kata sandi baru" autocomplete="new-password" 
+                                   oninput="checkProfilePasswordMatch()" required>
                             <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('inputConfirmPassword', this)" aria-label="Lihat kata sandi">
                                 <i class="bi bi-eye"></i>
                             </button>
+                        </div>
+                        <div id="profilePasswordMatchIndicator" class="mt-1 small" style="display:none;"></div>
+                        @error('password_confirmation', 'updatePassword')
+                        <div class="text-danger mt-1 small"><i class="bi bi-exclamation-circle me-1"></i>{{ $message }}</div>
+                        @enderror
+                        <div class="form-text text-muted mt-1" style="font-size:12px;">
+                            <i class="bi bi-info-circle text-success me-1"></i><strong>Petunjuk:</strong> Masukkan kembali kata sandi baru sama persis.
                         </div>
                     </div>
 
@@ -299,6 +326,32 @@ function togglePasswordVisibility(inputId, btn) {
     const icon = btn.querySelector('i');
     if (icon) {
         icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+    }
+}
+
+function checkProfilePasswordMatch() {
+    const pwd = document.getElementById('inputNewPassword');
+    const confirm = document.getElementById('inputConfirmPassword');
+    const indicator = document.getElementById('profilePasswordMatchIndicator');
+    if (!pwd || !confirm || !indicator) return;
+
+    if (!confirm.value && !pwd.value) {
+        indicator.style.display = 'none';
+        return;
+    }
+
+    if (!confirm.value && pwd.value) {
+        indicator.style.display = 'none';
+        return;
+    }
+
+    indicator.style.display = 'block';
+    if (pwd.value === confirm.value) {
+        indicator.className = 'mt-1 small text-success d-flex align-items-center gap-1';
+        indicator.innerHTML = '<i class="bi bi-check-circle-fill"></i> Konfirmasi kata sandi cocok.';
+    } else {
+        indicator.className = 'mt-1 small text-danger d-flex align-items-center gap-1';
+        indicator.innerHTML = '<i class="bi bi-x-circle-fill"></i> Konfirmasi kata sandi belum sama dengan kata sandi baru.';
     }
 }
 </script>

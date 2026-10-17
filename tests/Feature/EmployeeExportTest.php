@@ -94,13 +94,18 @@ class EmployeeExportTest extends TestCase
         @unlink($tempFile);
     }
 
-    public function test_non_admin_cannot_access_export_page(): void
+    public function test_authenticated_user_can_access_export_page(): void
     {
         $user = User::factory()->create(['role' => 'user']);
 
         $response = $this->actingAs($user)->get(route('employees.export.form'));
 
-        $response->assertStatus(403);
+        $response->assertStatus(200);
+
+        // Tamu (guest) diarahkan ke login
+        auth()->logout();
+        $guestResponse = $this->get(route('employees.export.form'));
+        $guestResponse->assertRedirect(route('login'));
     }
 
     public function test_admin_can_export_single_category_pkwt(): void

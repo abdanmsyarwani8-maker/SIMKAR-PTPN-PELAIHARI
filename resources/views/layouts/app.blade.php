@@ -292,6 +292,38 @@
             color: #9cb0a2;
         }
 
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .password-wrapper .form-control {
+            padding-right: 42px;
+        }
+        .password-wrapper .btn-toggle-pwd {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: #8da495;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 5;
+            transition: color 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .password-wrapper .btn-toggle-pwd:hover,
+        .password-wrapper .btn-toggle-pwd:focus {
+            color: var(--hijau-tua);
+            outline: none;
+        }
+
         /* ── RESPONSIVE HP ──────────────────────────── */
         @media (max-width: 991px) {
             body.sidebar-mini .sidebar, .sidebar { width: var(--sidebar-w); transform: translateX(-100%); }
@@ -467,6 +499,17 @@ function toggleMobileSidebar() {
     const overlay = document.getElementById('sidebarOverlay');
     sidebar.classList.toggle('mobile-show');
     overlay.classList.toggle('show');
+}
+
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    const icon = btn.querySelector('i');
+    if (icon) {
+        icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+    }
 }
 </script>
 
