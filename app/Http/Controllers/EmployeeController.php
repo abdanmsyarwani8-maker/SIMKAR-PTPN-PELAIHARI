@@ -26,6 +26,9 @@ class EmployeeController extends Controller
             ->filterStatus($request->get('statuses'))
             ->filterJenisKelamin($request->get('jenis_kelamin'))
             ->filterAgama($request->get('agama'))
+            ->filterPendidikan($request->get('pendidikan'))
+            ->filterPensiun($request->get('pensiun'))
+            ->filterPenghargaan($request->get('penghargaan'))
             ->filterRentangUsia($request->get('rentang_usia'))
             ->filterSumberLembar($request->get('sumber_lembar'))
             ->filterLokasi($request->get('lokasi'));
@@ -48,20 +51,32 @@ class EmployeeController extends Controller
         $agamaList = Employee::active()->distinct()->pluck('agama')->filter()->sort()->values();
         $jenisKelaminList = ['Laki-Laki', 'Perempuan'];
         $rentangUsiaList = Employee::rentangUsiaOptions();
+        $masaPensiunList = Employee::masaPensiunOptions();
+        $penghargaanList = Employee::penghargaanOptions();
         $sumberList = Employee::active()->distinct()->pluck('sumber_lembar')->filter()->sort()->values();
         $lokasiList = ['Lokal (Kalimantan Selatan)', 'Non-Lokal (Luar Kalimantan Selatan)'];
+
+        $distinctPendidikan = Employee::active()->distinct()->pluck('pendidikan_terakhir')->filter()->values()->toArray();
+        $orderPendidikan = ['SD', 'SLTP', 'SMP', 'SLTA', 'SMA', 'SMK', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3'];
+        $pendidikanList = collect($orderPendidikan)
+            ->filter(fn ($p) => in_array($p, $distinctPendidikan))
+            ->merge(collect($distinctPendidikan)->diff($orderPendidikan))
+            ->values();
 
         // Hitung filter aktif
         $activeFilters = collect([
             'bagian_ids', 'jabatan_ids', 'statuses',
-            'jenis_kelamin', 'agama', 'rentang_usia', 'sumber_lembar', 'lokasi',
+            'jenis_kelamin', 'agama', 'pendidikan', 'pensiun', 'penghargaan', 'rentang_usia', 'sumber_lembar', 'lokasi',
         ])->filter(fn ($key) => $request->filled($key))->count();
         $activeFilters += $request->filled('q') ? 1 : 0;
 
+        $statusCounts = Employee::active()->selectRaw('status_karyawan, count(*) as total')->groupBy('status_karyawan')->pluck('total', 'status_karyawan')->toArray();
+        $totalActiveEmployees = Employee::active()->count();
+
         return view('employees.index', compact(
             'employees', 'totalHasil', 'activeFilters',
-            'bagians', 'jabatans', 'statuses',
-            'agamaList', 'jenisKelaminList', 'rentangUsiaList', 'sumberList', 'lokasiList'
+            'bagians', 'jabatans', 'statuses', 'statusCounts', 'totalActiveEmployees',
+            'agamaList', 'jenisKelaminList', 'pendidikanList', 'masaPensiunList', 'penghargaanList', 'rentangUsiaList', 'sumberList', 'lokasiList'
         ));
     }
 
@@ -82,7 +97,7 @@ class EmployeeController extends Controller
     {
         $bagians = Bagian::orderBy('nama_bagian')->get();
         $jabatans = Jabatan::orderBy('nama_jabatan')->get();
-        $statuses = ['PKWT', 'Karpim & Karpel', 'KTNG'];
+        $statuses = ['PKWT', 'Karpim', 'Karpel', 'KTNG', 'BHL'];
 
         return view('employees.create', compact('bagians', 'jabatans', 'statuses'));
     }
@@ -124,7 +139,7 @@ class EmployeeController extends Controller
     {
         $bagians = Bagian::orderBy('nama_bagian')->get();
         $jabatans = Jabatan::orderBy('nama_jabatan')->get();
-        $statuses = ['PKWT', 'Karpim & Karpel', 'KTNG'];
+        $statuses = ['PKWT', 'Karpim', 'Karpel', 'KTNG', 'BHL'];
 
         return view('employees.edit', compact('employee', 'bagians', 'jabatans', 'statuses'));
     }

@@ -131,7 +131,7 @@ class EmployeeBatihImportTest extends TestCase
         $rahman = Employee::where('personnel_number', '10002')->first();
         $this->assertNotNull($rahman);
         $this->assertEquals('Rahman', $rahman->nama);
-        $this->assertEquals('Karpim & Karpel', $rahman->status_karyawan);
+        $this->assertEquals('Karpel', $rahman->status_karyawan);
         $this->assertEquals('Jawa', $rahman->suku);
         $this->assertEquals('Laki-Laki', $rahman->jenis_kelamin);
         $this->assertCount(1, $rahman->families);

@@ -128,6 +128,7 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
         // Format tanggal karyawan
         $tglLahirKaryawan = $this->parseDate($data['tanggal_lahir_karyawan'], 'Tanggal Lahir Karyawan', $rowNum);
         $tglMulaiKerja = $this->parseDate($data['tanggal_mulai_kerja'], 'Tanggal Mulai Kerja', $rowNum);
+        $tglCuti = $this->parseDate($data['tmt_cuti'] ?? null, 'TMT Cuti', $rowNum);
 
         // Format jenis kelamin & pendidikan
         $jkKaryawan = $this->mapGender($data['jenis_kelamin_karyawan']);
@@ -138,6 +139,7 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
             'nama' => $namaKaryawan,
             'tanggal_lahir' => $tglLahirKaryawan,
             'tanggal_mulai_kerja' => $tglMulaiKerja,
+            'tmt_cuti' => $tglCuti,
             'jenis_kelamin' => $jkKaryawan,
             'agama' => $this->cleanString($data['agama']),
             'pendidikan_terakhir' => $pendidikan,
@@ -152,6 +154,7 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
             'grade' => $this->cleanString($data['grade']),
             'suku' => $this->cleanString($data['suku']),
             'alamat' => $this->cleanString($data['alamat']),
+            'domisili' => $data['domisili'] ?? Employee::determineDomisili($data['alamat'] ?? null),
             'sumber_lembar' => $this->sheetName,
             'sumber_file' => $this->sourceFile,
             'is_active' => true,
@@ -361,7 +364,7 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
             'kategori_karyawan', 'kategori', 'status_karyawan', 'status karyawan', 'status',
             'employee_group', 'employee group', 'emp_group', 'emp. group', 'kelompok_karyawan',
         ]);
-        $statusKaryawan = $this->mapCategory($rawCategory, $this->sheetName);
+        $statusKaryawan = $this->mapCategory($rawCategory, $this->sheetName, $namaKaryawan, $nik);
 
         // Resolusi Tanggal Lahir Karyawan vs Tanggal Lahir Keluarga
         $rawEmpBirth = $get([
@@ -420,11 +423,28 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
         // Field Karyawan Lainnya
         $noPkwt = $get(['no_pkwt', 'no.pkwt', 'no. pkwt', 'nomor_pkwt', 'nomor_kontrak', 'no_kontrak', 'spkwt', 'no_spkwt']);
         $tmtKerja = $get(['tmt_kerja', 'tmt.kerja', 'tmt', 'tanggal_mulai_kerja', 'tgl_mulai_kerja', 'start_date', 'tanggal_masuk', 'tgl_masuk', 'mulai_kerja']);
+        $tmtCuti = $get(['tmt_cuti', 'tmt.cuti', 'tmt cuti', 'tanggal_cuti', 'tgl_cuti']);
+        if ($tmtKerja === null && $tmtCuti !== null) {
+            $tmtKerja = $tmtCuti;
+        }
         $agama = $get(['agama', 'religion', 'agama_karyawan']);
         $pendidikan = $get(['pendidikan_terakhir', 'pendidikan', 'last_education', 'education', 'educ.', 'pendidikan_karyawan']);
         $grade = $get(['grade', 'grade_karyawan', 'grade_jabatan']);
         $suku = $get(['suku', 'suku_bangsa', 'suku_karyawan', 'etnis']);
         $alamat = $get(['alamat', 'alamat_domisili', 'alamat_karyawan', 'address', 'alamat_ktp', 'alamat_tinggal']);
+        $rawDomisili = $get(['domisili', 'status_domisili', 'lokasi_domisili', 'domisili_lokal_non_lokal', 'kategori_domisili', 'lokasi']);
+        $domisili = null;
+        if ($rawDomisili) {
+            $domLower = strtolower(trim((string) $rawDomisili));
+            if (str_contains($domLower, 'non')) {
+                $domisili = 'Non-Lokal';
+            } elseif (str_contains($domLower, 'lokal')) {
+                $domisili = 'Lokal';
+            }
+        }
+        if (! $domisili) {
+            $domisili = Employee::determineDomisili($alamat);
+        }
 
         $unitKode = $get(['unit', 'kode_unit', 'kebun']);
         $subarea = $get(['personnel_subarea', 'subarea', 'unit', 'kebun', 'lokasi']);
@@ -452,6 +472,7 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
             'status_karyawan' => $statusKaryawan,
             'no_pkwt' => $noPkwt,
             'tanggal_mulai_kerja' => $tmtKerja,
+            'tmt_cuti' => $tmtCuti,
             'tanggal_lahir_karyawan' => $rawEmpBirth,
             'jenis_kelamin_karyawan' => $rawEmpGender,
             'agama' => $agama,
@@ -459,6 +480,7 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
             'grade' => $grade,
             'suku' => $suku,
             'alamat' => $alamat,
+            'domisili' => $domisili,
             'unit_kode' => $unitKode,
             'personnel_subarea' => $subarea,
             'organizational_unit' => $bagian,
@@ -533,9 +555,37 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
     }
 
     /**
-     * Pemetaan kategori karyawan ke PKWT, KTNG, Karpim & Karpel, atau status asli.
+     * Daftar nama Karpim (Karyawan Pimpinan).
      */
-    protected function mapCategory(?string $val, string $sheetName): ?string
+    protected array $namaKarpim = [
+        'Abdullah Syafii',
+        'Adam Brahmantyo Yogatama',
+        'Agus Handoko',
+        'Anwar Anshari',
+        'Ari Susanto',
+        'Arnold Widiarto',
+        'Asrofi',
+        'Teuku Akil Faza',
+    ];
+
+    /**
+     * Daftar NIK SAP Karpim (Karyawan Pimpinan).
+     */
+    protected array $nikKarpim = [
+        '13006998',
+        '13007684',
+        '13002791',
+        '13004520',
+        '13004850',
+        '13005464',
+        '13001734',
+        '19003363',
+    ];
+
+    /**
+     * Pemetaan kategori karyawan ke PKWT, KTNG, Karpim, Karpel, atau status asli.
+     */
+    protected function mapCategory(?string $val, string $sheetName, ?string $namaKaryawan = null, ?string $nik = null): ?string
     {
         $target = $val ? strtolower(trim($val)) : strtolower(trim($sheetName));
 
@@ -545,14 +595,30 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
         if (str_contains($target, 'ktng')) {
             return 'KTNG';
         }
+        if (str_contains($target, 'bhl')) {
+            return 'BHL';
+        }
         if (str_contains($target, 'karpim & karpel') || str_contains($target, 'karpim/karpel') || str_contains($target, 'karpim dan karpel')) {
-            return 'Karpim & Karpel';
+            $isKarpim = false;
+            if ($namaKaryawan) {
+                foreach ($this->namaKarpim as $karpim) {
+                    if (strcasecmp(trim($namaKaryawan), trim($karpim)) === 0) {
+                        $isKarpim = true;
+                        break;
+                    }
+                }
+            }
+            if (! $isKarpim && $nik && in_array((string) $nik, $this->nikKarpim, true)) {
+                $isKarpim = true;
+            }
+
+            return $isKarpim ? 'Karpim' : 'Karpel';
         }
-        if (str_contains($target, 'karpim')) {
-            return $val ? trim($val) : 'Karpim - Tetap';
+        if (str_contains($target, 'karpim') && ! str_contains($target, 'karpel')) {
+            return 'Karpim';
         }
-        if (str_contains($target, 'karpel')) {
-            return $val ? trim($val) : 'Karpel - Tetap';
+        if (str_contains($target, 'karpel') && ! str_contains($target, 'karpim')) {
+            return 'Karpel';
         }
         if (str_contains($target, 'papam')) {
             return 'Papam';

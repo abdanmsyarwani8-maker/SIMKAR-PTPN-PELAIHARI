@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Employee extends Model
 {
@@ -20,6 +21,7 @@ class Employee extends Model
         'nama',
         'tanggal_lahir',
         'tanggal_mulai_kerja',
+        'tmt_cuti',
         'jenis_kelamin',
         'agama',
         'pendidikan_terakhir',
@@ -34,6 +36,7 @@ class Employee extends Model
         'grade',
         'suku',
         'alamat',
+        'domisili',
         'sumber_lembar',
         'sumber_file',
         'is_active',
@@ -43,6 +46,7 @@ class Employee extends Model
     protected $casts = [
         'tanggal_lahir' => 'date',
         'tanggal_mulai_kerja' => 'date',
+        'tmt_cuti' => 'date',
         'is_active' => 'boolean',
     ];
 
@@ -52,6 +56,16 @@ class Employee extends Model
             if (str_contains(strtoupper($employee->status_karyawan ?? ''), 'PKWT')) {
                 $employee->grup_golongan = null;
                 $employee->grup_jabatan = null;
+            }
+            if (str_contains(strtoupper($employee->status_karyawan ?? ''), 'BHL')) {
+                $employee->grup_golongan = null;
+                $employee->grup_jabatan = null;
+                $employee->no_pkwt = null;
+                $employee->personnel_number = null;
+                $employee->pers_no = null;
+            }
+            if (empty($employee->domisili) && ! empty($employee->alamat)) {
+                $employee->domisili = static::determineDomisili($employee->alamat);
             }
         });
     }
@@ -101,7 +115,7 @@ class Employee extends Model
 
     public function getTanggalPensiunAttribute(): ?Carbon
     {
-        if (! $this->tanggal_lahir) {
+        if (! $this->tanggal_lahir || str_contains(strtoupper($this->status_karyawan ?? ''), 'BHL')) {
             return null;
         }
 
@@ -110,7 +124,7 @@ class Employee extends Model
 
     public function getSisaWaktuPensiunAttribute(): ?string
     {
-        if (! $this->tanggal_lahir) {
+        if (! $this->tanggal_lahir || str_contains(strtoupper($this->status_karyawan ?? ''), 'BHL')) {
             return null;
         }
 
@@ -166,9 +180,31 @@ class Employee extends Model
         if (! $this->tanggal_mulai_kerja) {
             return null;
         }
-        $years = Carbon::parse($this->tanggal_mulai_kerja)->diffInYears(now());
 
-        return $years.' Tahun';
+        $mulai = Carbon::parse($this->tanggal_mulai_kerja)->startOfDay();
+        $now = now()->startOfDay();
+
+        if ($mulai->isFuture()) {
+            return 'Belum mulai bekerja';
+        }
+
+        $diff = $mulai->diff($now);
+        $years = (int) $diff->y;
+        $months = (int) $diff->m;
+        $days = (int) $diff->d;
+
+        $parts = [];
+        if ($years > 0) {
+            $parts[] = "{$years} tahun";
+        }
+        if ($months > 0) {
+            $parts[] = "{$months} bulan";
+        }
+        if ($days > 0 || empty($parts)) {
+            $parts[] = "{$days} hari";
+        }
+
+        return implode(', ', $parts);
     }
 
     public function getStatusKaryawanLabelAttribute(): string
@@ -186,6 +222,153 @@ class Employee extends Model
         ];
 
         return $map[$this->pendidikan_terakhir] ?? ($this->pendidikan_terakhir ?? 'Belum Diisi');
+    }
+
+    public function getPenghargaanMasaKerjaAttribute(): ?string
+    {
+        if (! $this->tanggal_mulai_kerja) {
+            return null;
+        }
+
+        $years = (int) Carbon::parse($this->tanggal_mulai_kerja)->diffInYears(now());
+
+        if ($years >= 35) {
+            return '35 Tahun';
+        }
+        if ($years >= 30) {
+            return '30 Tahun';
+        }
+        if ($years >= 25) {
+            return '25 Tahun';
+        }
+
+        return null;
+    }
+
+    // ─── Cuti Tahunan & Cuti Panjang ─────────────────────────
+
+    /**
+     * Tanggal acuan perhitungan cuti:
+     * Mengutamakan tanggal_mulai_kerja (pengangkatan kerja).
+     * Jika tidak ada, gunakan tmt_cuti bila tersedia.
+     */
+    public function getTanggalAcuanCutiAttribute(): ?Carbon
+    {
+        if ($this->tmt_cuti) {
+            return Carbon::parse($this->tmt_cuti);
+        }
+
+        if ($this->tanggal_mulai_kerja) {
+            return Carbon::parse($this->tanggal_mulai_kerja);
+        }
+
+        return null;
+    }
+
+    /**
+     * Bulan jatuh tempo cuti dalam bahasa Indonesia.
+     */
+    public function getBulanJatuhTempoCutiAttribute(): string
+    {
+        $acuan = $this->tanggal_acuan_cuti;
+        if (! $acuan) {
+            return 'Perlu Verifikasi';
+        }
+
+        $bulanIndo = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+
+        return $bulanIndo[(int) $acuan->month] ?? 'Perlu Verifikasi';
+    }
+
+    /**
+     * Perhitungan dinamis hak cuti untuk tahun tertentu.
+     * Rumus Cuti Panjang: Tahun Pengangkatan + (6 * n), dengan n >= 1.
+     *
+     * @return array{
+     *   tahun: int,
+     *   jenis_cuti: string,
+     *   status_label: string,
+     *   is_cuti_panjang: bool,
+     *   is_valid: bool,
+     *   bulan_jatuh_tempo: string,
+     *   tanggal_acuan: ?Carbon,
+     *   tahun_cuti_panjang_berikutnya: string|int,
+     *   siklus_ke: ?int,
+     *   keterangan: string
+     * }
+     */
+    public function getCutiStatusForYear(?int $year = null): array
+    {
+        $tahun = $year ?? (int) now()->year;
+        $acuan = $this->tanggal_acuan_cuti;
+
+        if (! $acuan) {
+            return [
+                'tahun' => $tahun,
+                'jenis_cuti' => 'Perlu Verifikasi',
+                'status_label' => 'Perlu Verifikasi',
+                'is_cuti_panjang' => false,
+                'is_valid' => false,
+                'bulan_jatuh_tempo' => 'Perlu Verifikasi',
+                'tanggal_acuan' => null,
+                'tahun_cuti_panjang_berikutnya' => 'Perlu Verifikasi',
+                'siklus_ke' => null,
+                'keterangan' => 'Tanggal pengangkatan kerja belum tersedia',
+            ];
+        }
+
+        $tahunPengangkatan = (int) $acuan->year;
+        $selisihTahun = $tahun - $tahunPengangkatan;
+
+        // Tahun cuti panjang berikutnya
+        if ($tahun < $tahunPengangkatan) {
+            $tahunBerikutnya = $tahunPengangkatan + 6;
+        } else {
+            $n = (int) floor($selisihTahun / 6) + 1;
+            $tahunBerikutnya = $tahunPengangkatan + (6 * $n);
+        }
+
+        if ($selisihTahun < 1) {
+            return [
+                'tahun' => $tahun,
+                'jenis_cuti' => 'Belum Memenuhi Syarat',
+                'status_label' => 'Belum Memenuhi Syarat',
+                'is_cuti_panjang' => false,
+                'is_valid' => true,
+                'bulan_jatuh_tempo' => $this->bulan_jatuh_tempo_cuti,
+                'tanggal_acuan' => $acuan,
+                'tahun_cuti_panjang_berikutnya' => $tahunPengangkatan + 6,
+                'siklus_ke' => null,
+                'keterangan' => 'Masa kerja belum mencapai 1 tahun pada tahun '.$tahun,
+            ];
+        }
+
+        $isCutiPanjang = ($selisihTahun % 6 === 0);
+        $siklusKe = $isCutiPanjang ? (int) ($selisihTahun / 6) : null;
+
+        return [
+            'tahun' => $tahun,
+            'jenis_cuti' => $isCutiPanjang ? 'Cuti Panjang' : 'Cuti Tahunan',
+            'status_label' => $isCutiPanjang ? 'Jatuh Tempo Cuti Panjang' : 'Cuti Tahunan',
+            'is_cuti_panjang' => $isCutiPanjang,
+            'is_valid' => true,
+            'bulan_jatuh_tempo' => $this->bulan_jatuh_tempo_cuti,
+            'tanggal_acuan' => $acuan,
+            'tahun_cuti_panjang_berikutnya' => $tahunBerikutnya,
+            'siklus_ke' => $siklusKe,
+            'keterangan' => $isCutiPanjang
+                ? 'Jatuh tempo hak Cuti Panjang ke-'.$siklusKe.' pada tahun '.$tahun
+                : 'Hak Cuti Tahunan berulang pada bulan '.$this->bulan_jatuh_tempo_cuti.' '.$tahun,
+        ];
+    }
+
+    public function getTahunCutiPanjangBerikutnyaAttribute(): string|int
+    {
+        return $this->getCutiStatusForYear()['tahun_cuti_panjang_berikutnya'];
     }
 
     // ─── Scopes ───────────────────────────────────────────────
@@ -258,6 +441,145 @@ class Employee extends Model
         return $query->whereIn('agama', $values);
     }
 
+    public function scopeFilterBulanCuti(Builder $query, ?array $months): Builder
+    {
+        if (empty($months)) {
+            return $query;
+        }
+
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            $monthExpr = "CAST(strftime('%m', COALESCE(tmt_cuti, tanggal_mulai_kerja)) AS INTEGER)";
+        } else {
+            $monthExpr = 'MONTH(COALESCE(tmt_cuti, tanggal_mulai_kerja))';
+        }
+
+        return $query->whereNotNull(DB::raw('COALESCE(tmt_cuti, tanggal_mulai_kerja)'))
+            ->whereIn(DB::raw($monthExpr), $months);
+    }
+
+    public function scopeFilterJenisCuti(Builder $query, ?array $jenisCuti, int $year): Builder
+    {
+        if (empty($jenisCuti)) {
+            return $query;
+        }
+
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            $diffExpr = "($year - CAST(strftime('%Y', COALESCE(tmt_cuti, tanggal_mulai_kerja)) AS INTEGER))";
+            $modZero = "$diffExpr > 0 AND $diffExpr % 6 = 0";
+            $modNotZero = "$diffExpr > 0 AND $diffExpr % 6 != 0";
+        } else {
+            $diffExpr = "($year - YEAR(COALESCE(tmt_cuti, tanggal_mulai_kerja)))";
+            $modZero = "$diffExpr > 0 AND MOD($diffExpr, 6) = 0";
+            $modNotZero = "$diffExpr > 0 AND MOD($diffExpr, 6) != 0";
+        }
+
+        return $query->where(function ($q) use ($jenisCuti, $modZero, $modNotZero) {
+            foreach ($jenisCuti as $jenis) {
+                if ($jenis === 'Cuti Panjang') {
+                    $q->orWhere(function ($sub) use ($modZero) {
+                        $sub->whereNotNull(DB::raw('COALESCE(tmt_cuti, tanggal_mulai_kerja)'))
+                            ->whereRaw($modZero);
+                    });
+                } elseif ($jenis === 'Cuti Tahunan') {
+                    $q->orWhere(function ($sub) use ($modNotZero) {
+                        $sub->whereNotNull(DB::raw('COALESCE(tmt_cuti, tanggal_mulai_kerja)'))
+                            ->whereRaw($modNotZero);
+                    });
+                } elseif ($jenis === 'Perlu Verifikasi') {
+                    $q->orWhere(function ($sub) {
+                        $sub->whereNull('tmt_cuti')->whereNull('tanggal_mulai_kerja');
+                    });
+                }
+            }
+        });
+    }
+
+    public function scopeFilterPendidikan(Builder $query, ?array $values): Builder
+    {
+        if (empty($values)) {
+            return $query;
+        }
+
+        $expanded = [];
+        foreach ($values as $p) {
+            $expanded[] = $p;
+            if ($p === 'SLTP' || $p === 'SMP') {
+                $expanded[] = 'SLTP';
+                $expanded[] = 'SMP';
+            } elseif ($p === 'SLTA' || $p === 'SMA' || $p === 'SMK') {
+                $expanded[] = 'SLTA';
+                $expanded[] = 'SMA';
+                $expanded[] = 'SMK';
+            }
+        }
+
+        return $query->whereIn('pendidikan_terakhir', array_unique($expanded));
+    }
+
+    public function scopeFilterPensiun(Builder $query, ?array $options): Builder
+    {
+        if (empty($options)) {
+            return $query;
+        }
+
+        $now = now()->startOfDay();
+
+        return $query->whereNotNull('tanggal_lahir')
+            ->where(function ($q) {
+                $q->whereNull('status_karyawan')
+                    ->orWhere('status_karyawan', 'not like', '%BHL%');
+            })
+            ->where(function ($q) use ($options, $now) {
+                foreach ($options as $opt) {
+                    $q->orWhere(function ($sub) use ($opt, $now) {
+                        if ($opt === '≤ 1 Tahun' || $opt === '<= 1 Tahun' || $opt === '1_tahun') {
+                            // Belum pensiun tapi pensiun dalam <= 1 tahun lagi (usia 54 - 55)
+                            $sub->whereDate('tanggal_lahir', '>=', $now->copy()->subYears(55))
+                                ->whereDate('tanggal_lahir', '<=', $now->copy()->subYears(54));
+                        } elseif ($opt === '1–2 Tahun' || $opt === '1-2 Tahun' || $opt === '2_tahun') {
+                            // Pensiun dalam 1-2 tahun lagi (usia 53 - 54)
+                            $sub->whereDate('tanggal_lahir', '>', $now->copy()->subYears(54))
+                                ->whereDate('tanggal_lahir', '<=', $now->copy()->subYears(53));
+                        } elseif ($opt === 'Sudah Pensiun' || $opt === 'sudah') {
+                            // Sudah mencapai atau melewati usia 55 tahun
+                            $sub->whereDate('tanggal_lahir', '<', $now->copy()->subYears(55));
+                        }
+                    });
+                }
+            });
+    }
+
+    public function scopeFilterPenghargaan(Builder $query, ?array $options): Builder
+    {
+        if (empty($options)) {
+            return $query;
+        }
+
+        $now = now()->startOfDay();
+
+        return $query->whereNotNull('tanggal_mulai_kerja')->where(function ($q) use ($options, $now) {
+            foreach ($options as $opt) {
+                $q->orWhere(function ($sub) use ($opt, $now) {
+                    $optStr = (string) $opt;
+                    if (str_starts_with($optStr, '25')) {
+                        // 25 - 29 Tahun
+                        $sub->whereDate('tanggal_mulai_kerja', '<=', $now->copy()->subYears(25))
+                            ->whereDate('tanggal_mulai_kerja', '>', $now->copy()->subYears(30));
+                    } elseif (str_starts_with($optStr, '30')) {
+                        // 30 - 34 Tahun
+                        $sub->whereDate('tanggal_mulai_kerja', '<=', $now->copy()->subYears(30))
+                            ->whereDate('tanggal_mulai_kerja', '>', $now->copy()->subYears(35));
+                    } elseif (str_starts_with($optStr, '35')) {
+                        // 35 Tahun ke atas
+                        $sub->whereDate('tanggal_mulai_kerja', '<=', $now->copy()->subYears(35));
+                    }
+                });
+            }
+        });
+    }
+
     public function scopeFilterRentangUsia(Builder $query, ?array $ranges): Builder
     {
         if (empty($ranges)) {
@@ -299,34 +621,68 @@ class Employee extends Model
      *
      * @param  array<string>|null  $lokasi
      */
+    public function getDomisiliAttribute(?string $value): ?string
+    {
+        if (! empty($value)) {
+            return $value;
+        }
+
+        if (! empty($this->alamat)) {
+            return static::determineDomisili($this->alamat);
+        }
+
+        return null;
+    }
+
+    public static function determineDomisili(?string $alamat): ?string
+    {
+        if (empty($alamat)) {
+            return null;
+        }
+
+        foreach (static::kalselKeywords() as $kw) {
+            if (stripos($alamat, $kw) !== false) {
+                return 'Lokal';
+            }
+        }
+
+        return 'Non-Lokal';
+    }
+
     public function scopeFilterLokasi(Builder $query, ?array $lokasi): Builder
     {
         if (empty($lokasi)) {
             return $query;
         }
 
-        $wantLokal = in_array('Lokal (Kalimantan Selatan)', $lokasi);
-        $wantNonLokal = in_array('Non-Lokal (Luar Kalimantan Selatan)', $lokasi);
+        $wantLokal = in_array('Lokal (Kalimantan Selatan)', $lokasi) || in_array('Lokal', $lokasi);
+        $wantNonLokal = in_array('Non-Lokal (Luar Kalimantan Selatan)', $lokasi) || in_array('Non-Lokal', $lokasi);
 
         if ($wantLokal && $wantNonLokal) {
             return $query; // Keduanya dipilih → tidak perlu filter
         }
 
-        $keywords = static::kalselKeywords();
-
         if ($wantLokal) {
-            return $query->where(function ($q) use ($keywords) {
-                foreach ($keywords as $kw) {
-                    $q->orWhere('alamat', 'like', "%{$kw}%");
-                }
+            return $query->where(function ($q) {
+                $q->where('domisili', 'Lokal')
+                    ->orWhere(function ($sub) {
+                        $sub->whereNull('domisili');
+                        foreach (static::kalselKeywords() as $kw) {
+                            $sub->orWhere('alamat', 'like', "%{$kw}%");
+                        }
+                    });
             });
         }
 
         if ($wantNonLokal) {
-            return $query->where(function ($q) use ($keywords) {
-                foreach ($keywords as $kw) {
-                    $q->where('alamat', 'not like', "%{$kw}%");
-                }
+            return $query->where(function ($q) {
+                $q->where('domisili', 'Non-Lokal')
+                    ->orWhere(function ($sub) {
+                        $sub->whereNull('domisili');
+                        foreach (static::kalselKeywords() as $kw) {
+                            $sub->where('alamat', 'not like', "%{$kw}%");
+                        }
+                    });
             });
         }
 
@@ -343,6 +699,16 @@ class Employee extends Model
     public static function rentangUsiaOptions(): array
     {
         return ['< 25 Tahun', '25–34 Tahun', '35–44 Tahun', '45–54 Tahun', '≥ 55 Tahun'];
+    }
+
+    public static function masaPensiunOptions(): array
+    {
+        return ['≤ 1 Tahun', '1–2 Tahun', 'Sudah Pensiun'];
+    }
+
+    public static function penghargaanOptions(): array
+    {
+        return ['25 Tahun', '30 Tahun', '35 Tahun'];
     }
 
     /**

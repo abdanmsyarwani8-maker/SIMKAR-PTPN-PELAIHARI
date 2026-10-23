@@ -27,7 +27,8 @@ class EmployeeExportTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Export Data Karyawan');
         $response->assertSee('PKWT');
-        $response->assertSee('Karpim &amp; Karpel', false);
+        $response->assertSee('Karpim');
+        $response->assertSee('Karpel');
         $response->assertSee('KTNG');
         $response->assertSee('Masukkan Data Keluarga');
         $response->assertSee('Tanpa Data Keluarga');
@@ -75,10 +76,11 @@ class EmployeeExportTest extends TestCase
         $spreadsheet = IOFactory::load($tempFile);
         $sheet = $spreadsheet->getSheet(0);
 
-        // Header harus 14 kolom untuk PKWT tanpa keluarga (A sampai N)
+        // Header harus 15 kolom untuk PKWT tanpa keluarga (A sampai O, termasuk Domisili)
         $this->assertEquals('No. PKWT', $sheet->getCell('D1')->getValue());
         $this->assertEquals('Alamat', $sheet->getCell('N1')->getValue());
-        $this->assertNull($sheet->getCell('O1')->getValue());
+        $this->assertEquals('Domisili', $sheet->getCell('O1')->getValue());
+        $this->assertNull($sheet->getCell('P1')->getValue());
 
         // Baris data hanya 1 (baris 2), bukan 2 baris keluarga
         $this->assertEquals('19009999', $sheet->getCell('A2')->getValue());
@@ -155,10 +157,11 @@ class EmployeeExportTest extends TestCase
         $this->assertEquals('Nama Karyawan', $spreadsheet->getSheet(0)->getCell('B1')->getValue());
         $this->assertEquals('No. PKWT', $spreadsheet->getSheet(0)->getCell('D1')->getValue());
 
-        // Verifikasi baris data (Ani Istri berada di kolom O2 setelah 14 kolom data karyawan)
+        // Verifikasi baris data (Ani Istri berada di kolom P2 setelah 15 kolom data karyawan termasuk Domisili di O2)
         $this->assertEquals('19001234', $spreadsheet->getSheet(0)->getCell('A2')->getValue());
         $this->assertEquals('Budi PKWT', $spreadsheet->getSheet(0)->getCell('B2')->getValue());
-        $this->assertEquals('Ani Istri', $spreadsheet->getSheet(0)->getCell('O2')->getValue());
+        $this->assertEquals('Domisili', $spreadsheet->getSheet(0)->getCell('O1')->getValue());
+        $this->assertEquals('Ani Istri', $spreadsheet->getSheet(0)->getCell('P2')->getValue());
 
         @unlink($tempFile);
     }
@@ -232,21 +235,23 @@ class EmployeeExportTest extends TestCase
         $pkwtSheet = $spreadsheet->getSheetByName('PKWT');
         $this->assertEquals('No. PKWT', $pkwtSheet->getCell('D1')->getValue());
         $pkwtHeaders = [];
-        for ($c = 1; $c <= 18; $c++) {
+        for ($c = 1; $c <= 19; $c++) {
             $colLetter = Coordinate::stringFromColumnIndex($c);
             $pkwtHeaders[] = $pkwtSheet->getCell($colLetter.'1')->getValue();
         }
         $this->assertNotContains('Golongan', $pkwtHeaders);
+        $this->assertContains('Domisili', $pkwtHeaders);
 
         // Verifikasi sheet Karpim & Karpel: Memiliki Golongan dan TIDAK MEMILIKI No. PKWT
         $karpimSheet = $spreadsheet->getSheetByName('Karpim & Karpel');
         $this->assertEquals('Golongan', $karpimSheet->getCell('J1')->getValue());
         $karpimHeaders = [];
-        for ($c = 1; $c <= 18; $c++) {
+        for ($c = 1; $c <= 19; $c++) {
             $colLetter = Coordinate::stringFromColumnIndex($c);
             $karpimHeaders[] = $karpimSheet->getCell($colLetter.'1')->getValue();
         }
         $this->assertNotContains('No. PKWT', $karpimHeaders);
+        $this->assertContains('Domisili', $karpimHeaders);
 
         // Tes Re-Import file hasil ekspor ke dalam SIMKAR
         $importer = new EmployeeImport($tempFile, ['PKWT', 'Karpim & Karpel', 'KTNG']);
@@ -255,6 +260,210 @@ class EmployeeExportTest extends TestCase
         $results = $importer->getResults();
         $this->assertEmpty($results['errors'], 'Re-import harus berjalan tanpa error!');
         $this->assertGreaterThan(0, $results['updated'] + $results['inserted']);
+
+        @unlink($tempFile);
+    }
+
+    public function test_export_respects_filters(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $bagian1 = Bagian::create(['nama_bagian' => 'Afdeling Satu']);
+        $bagian2 = Bagian::create(['nama_bagian' => 'Afdeling Dua']);
+        $jabatan = Jabatan::create(['nama_jabatan' => 'Pemanen']);
+
+        Employee::create([
+            'personnel_number' => '19008801',
+            'nama' => 'Budi Afdeling Satu',
+            'status_karyawan' => 'PKWT',
+            'bagian_id' => $bagian1->id,
+            'jabatan_id' => $jabatan->id,
+            'is_active' => true,
+        ]);
+
+        Employee::create([
+            'personnel_number' => '19008802',
+            'nama' => 'Joko Afdeling Dua',
+            'status_karyawan' => 'PKWT',
+            'bagian_id' => $bagian2->id,
+            'jabatan_id' => $jabatan->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('employees.export', [
+            'bagian_ids' => [$bagian1->id],
+            'include_family' => '0',
+        ]));
+
+        $response->assertStatus(200);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_filter_export_').'.xlsx';
+        ob_start();
+        $response->sendContent();
+        $content = ob_get_clean();
+        file_put_contents($tempFile, $content);
+
+        $spreadsheet = IOFactory::load($tempFile);
+        $sheet = $spreadsheet->getSheet(0);
+
+        // Baris 2 harus Budi, dan baris 3 tidak boleh ada Joko
+        $this->assertEquals('Budi Afdeling Satu', $sheet->getCell('B2')->getValue());
+        $this->assertNull($sheet->getCell('B3')->getValue());
+
+        @unlink($tempFile);
+    }
+
+    public function test_admin_can_filter_and_export_by_pendidikan_terakhir(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Employee::create([
+            'personnel_number' => '19008810',
+            'nama' => 'Sarjana S1',
+            'status_karyawan' => 'PKWT',
+            'pendidikan_terakhir' => 'S1',
+            'is_active' => true,
+        ]);
+
+        Employee::create([
+            'personnel_number' => '19008811',
+            'nama' => 'Lulusan SMA',
+            'status_karyawan' => 'PKWT',
+            'pendidikan_terakhir' => 'SLTA',
+            'is_active' => true,
+        ]);
+
+        // Filter via index view
+        $resIndex = $this->actingAs($admin)->get(route('employees.index', [
+            'pendidikan' => ['S1'],
+        ]));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Sarjana S1');
+        $resIndex->assertDontSee('Lulusan SMA');
+
+        // Direct export with pendidikan filter
+        $resExport = $this->actingAs($admin)->get(route('employees.export', [
+            'pendidikan' => ['S1'],
+            'include_family' => '0',
+        ]));
+        $resExport->assertStatus(200);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_pendidikan_export_').'.xlsx';
+        ob_start();
+        $resExport->sendContent();
+        $content = ob_get_clean();
+        file_put_contents($tempFile, $content);
+
+        $spreadsheet = IOFactory::load($tempFile);
+        $sheet = $spreadsheet->getSheet(0);
+
+        $this->assertEquals('Sarjana S1', $sheet->getCell('B2')->getValue());
+        $this->assertNull($sheet->getCell('B3')->getValue());
+
+        @unlink($tempFile);
+    }
+
+    public function test_admin_can_filter_and_export_by_masa_pensiun(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Karyawan 1: Pensiun dalam 6 bulan lagi (usia 54.5 tahun)
+        Employee::create([
+            'personnel_number' => '19007701',
+            'nama' => 'Pensiun Enam Bulan',
+            'status_karyawan' => 'PKWT',
+            'tanggal_lahir' => now()->subYears(55)->addMonths(6)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        // Karyawan 2: Usia 30 tahun (pensiun 25 tahun lagi)
+        Employee::create([
+            'personnel_number' => '19007702',
+            'nama' => 'Karyawan Muda',
+            'status_karyawan' => 'PKWT',
+            'tanggal_lahir' => now()->subYears(30)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        // Filter index via HTTP
+        $res = $this->actingAs($admin)->get(route('employees.index', [
+            'pensiun' => ['≤ 1 Tahun'],
+        ]));
+
+        $res->assertStatus(200);
+        $res->assertSee('Pensiun Enam Bulan');
+        $res->assertDontSee('Karyawan Muda');
+
+        // Export via HTTP
+        $resExport = $this->actingAs($admin)->get(route('employees.export', [
+            'pensiun' => ['≤ 1 Tahun'],
+            'include_family' => '0',
+        ]));
+        $resExport->assertStatus(200);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_pensiun_export_').'.xlsx';
+        ob_start();
+        $resExport->sendContent();
+        $content = ob_get_clean();
+        file_put_contents($tempFile, $content);
+
+        $spreadsheet = IOFactory::load($tempFile);
+        $sheet = $spreadsheet->getSheet(0);
+
+        $this->assertEquals('Pensiun Enam Bulan', $sheet->getCell('B2')->getValue());
+        $this->assertNull($sheet->getCell('B3')->getValue());
+
+        @unlink($tempFile);
+    }
+
+    public function test_admin_can_filter_and_export_by_penghargaan(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Karyawan 1: Masa kerja 26 tahun (kategori 25 Tahun)
+        Employee::create([
+            'personnel_number' => '19006601',
+            'nama' => 'Penerima Jubileum 25',
+            'status_karyawan' => 'PKWT',
+            'tanggal_mulai_kerja' => now()->subYears(26)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        // Karyawan 2: Masa kerja 5 tahun (belum dapat penghargaan)
+        Employee::create([
+            'personnel_number' => '19006602',
+            'nama' => 'Karyawan Baru',
+            'status_karyawan' => 'PKWT',
+            'tanggal_mulai_kerja' => now()->subYears(5)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        // Filter index via HTTP
+        $res = $this->actingAs($admin)->get(route('employees.index', [
+            'penghargaan' => ['25 Tahun'],
+        ]));
+
+        $res->assertStatus(200);
+        $res->assertSee('Penerima Jubileum 25');
+        $res->assertDontSee('Karyawan Baru');
+
+        // Export via HTTP
+        $resExport = $this->actingAs($admin)->get(route('employees.export', [
+            'penghargaan' => ['25 Tahun'],
+            'include_family' => '0',
+        ]));
+        $resExport->assertStatus(200);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'test_penghargaan_export_').'.xlsx';
+        ob_start();
+        $resExport->sendContent();
+        $content = ob_get_clean();
+        file_put_contents($tempFile, $content);
+
+        $spreadsheet = IOFactory::load($tempFile);
+        $sheet = $spreadsheet->getSheet(0);
+
+        $this->assertEquals('Penerima Jubileum 25', $sheet->getCell('B2')->getValue());
+        $this->assertNull($sheet->getCell('B3')->getValue());
 
         @unlink($tempFile);
     }

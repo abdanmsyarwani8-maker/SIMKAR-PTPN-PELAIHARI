@@ -115,6 +115,15 @@
                value="{{ old('tanggal_mulai_kerja', isset($employee->tanggal_mulai_kerja) ? $employee->tanggal_mulai_kerja->format('Y-m-d') : '') }}">
     </div>
 
+    <div class="col-md-4">
+        <label class="form-label fw-600" style="font-size:13px">
+            TMT Cuti (Opsional)
+            <i class="bi bi-info-circle text-muted" title="Diisi jika tanggal acuan cuti berbeda dari tanggal mulai kerja"></i>
+        </label>
+        <input type="date" name="tmt_cuti" class="form-control"
+               value="{{ old('tmt_cuti', isset($employee->tmt_cuti) ? $employee->tmt_cuti->format('Y-m-d') : '') }}">
+    </div>
+
     @php
         $initStatus = old('status_karyawan', $employee->status_karyawan ?? '');
         $isInitPkwt = str_contains(strtoupper((string)$initStatus), 'PKWT');
@@ -136,6 +145,31 @@
         <label class="form-label fw-600" style="font-size:13px">Grade</label>
         <input type="text" name="grade" class="form-control"
                value="{{ old('grade', $employee->grade ?? '') }}" placeholder="Cth: 1, 2, G1, dst.">
+    </div>
+
+    {{-- Identitas Tambahan: Suku, Domisili & Alamat --}}
+    <div class="col-md-6">
+        <label class="form-label fw-600" style="font-size:13px">Suku</label>
+        <input type="text" name="suku" class="form-control"
+               value="{{ old('suku', $employee->suku ?? '') }}" placeholder="Jawa, Banjar, Bugis, Dayak, dst.">
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-600" style="font-size:13px">Domisili</label>
+        @php
+            $currentDomisili = old('domisili', $employee->domisili ?? '');
+        @endphp
+        <select name="domisili" class="form-select">
+            <option value="">-- Otomatis Berdasarkan Alamat --</option>
+            <option value="Lokal" {{ $currentDomisili === 'Lokal' ? 'selected' : '' }}>Lokal (Kalimantan Selatan)</option>
+            <option value="Non-Lokal" {{ $currentDomisili === 'Non-Lokal' ? 'selected' : '' }}>Non-Lokal (Luar Kalimantan Selatan)</option>
+        </select>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label fw-600" style="font-size:13px">Alamat Lengkap</label>
+        <textarea name="alamat" class="form-control" rows="2"
+                  placeholder="Alamat domisili/KTP karyawan">{{ old('alamat', $employee->alamat ?? '') }}</textarea>
     </div>
 
     {{-- Sumber data --}}

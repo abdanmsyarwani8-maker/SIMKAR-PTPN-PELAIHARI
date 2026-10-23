@@ -686,6 +686,7 @@
                                     str_contains($status, 'Karpel') => 'badge-karpel',
                                     str_contains($status, 'PKWT')   => 'badge-pkwt',
                                     str_contains($status, 'KTNG')   => 'badge-ktng',
+                                    str_contains($status, 'BHL')    => 'badge-bhl',
                                     str_contains($status, 'Papam')  => 'badge-papam',
                                     default => 'bg-secondary text-white',
                                 };

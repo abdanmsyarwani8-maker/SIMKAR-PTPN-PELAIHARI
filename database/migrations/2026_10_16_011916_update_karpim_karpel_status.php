@@ -15,6 +15,7 @@ return new class extends Migration
         'Abdullah Syafii',
         'Adam Brahmantyo Yogatama',
         'Agus Handoko',
+        'Anwar Anshari',
         'Ari Susanto',
         'Arnold Widiarto',
         'Asrofi',

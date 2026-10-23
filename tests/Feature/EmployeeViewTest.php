@@ -209,7 +209,8 @@ class EmployeeViewTest extends TestCase
         $resCreate = $this->actingAs($admin)->get(route('employees.create'));
         $resCreate->assertStatus(200);
         $resCreate->assertSee('PKWT');
-        $resCreate->assertSee('Karpim &amp; Karpel', false);
+        $resCreate->assertSee('Karpim');
+        $resCreate->assertSee('Karpel');
         $resCreate->assertSee('KTNG');
         $resCreate->assertSee('Grade');
         $resCreate->assertDontSee('NIK Lokal');
@@ -220,7 +221,8 @@ class EmployeeViewTest extends TestCase
         $resEdit = $this->actingAs($admin)->get(route('employees.edit', $emp));
         $resEdit->assertStatus(200);
         $resEdit->assertSee('PKWT');
-        $resEdit->assertSee('Karpim &amp; Karpel', false);
+        $resEdit->assertSee('Karpim');
+        $resEdit->assertSee('Karpel');
         $resEdit->assertSee('KTNG');
         $resEdit->assertSee('Grade');
         $resEdit->assertSee('G1');
@@ -298,5 +300,60 @@ class EmployeeViewTest extends TestCase
         $this->assertDatabaseMissing('employee_families', [
             'id' => $family->id,
         ]);
+    }
+
+    public function test_employee_show_renders_working_duration_masa_kerja(): void
+    {
+        $user = User::factory()->create();
+        $employee = Employee::create([
+            'personnel_number' => '13009906',
+            'nama' => 'Karyawan Masa Kerja Test',
+            'jenis_kelamin' => 'Laki-Laki',
+            'status_karyawan' => 'Karpel',
+            'tanggal_mulai_kerja' => now()->subYears(3)->subMonths(2)->subDays(10)->format('Y-m-d'),
+            'is_active' => true,
+        ]);
+
+        $this->assertEquals('3 tahun, 2 bulan, 10 hari', $employee->masa_kerja);
+
+        $response = $this->actingAs($user)->get(route('employees.show', $employee));
+        $response->assertStatus(200);
+        $response->assertSee('Masa Kerja (Lama Bekerja)');
+        $response->assertSee('3 tahun, 2 bulan, 10 hari');
+    }
+
+    public function test_employee_index_filters_bhl_status(): void
+    {
+        $user = User::factory()->create();
+        $bagian = Bagian::create(['nama_bagian' => 'AFDELING II']);
+
+        $bhl = Employee::create([
+            'nama' => 'Saifuddin',
+            'status_karyawan' => 'BHL',
+            'bagian_id' => $bagian->id,
+            'tanggal_lahir' => '1979-04-10',
+            'tanggal_mulai_kerja' => '2026-08-01',
+            'is_active' => true,
+        ]);
+
+        $pkwt = Employee::create([
+            'nama' => 'Karyawan PKWT Lain',
+            'status_karyawan' => 'PKWT',
+            'bagian_id' => $bagian->id,
+            'is_active' => true,
+        ]);
+
+        // Access index without filter: sees both
+        $response = $this->actingAs($user)->get(route('employees.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Saifuddin');
+        $response->assertSee('Karyawan PKWT Lain');
+        $response->assertSee('BHL');
+
+        // Access index with statuses[]=BHL filter: sees only BHL
+        $filterResponse = $this->actingAs($user)->get(route('employees.index', ['statuses' => ['BHL']]));
+        $filterResponse->assertStatus(200);
+        $filterResponse->assertSee('Saifuddin');
+        $filterResponse->assertDontSee('Karyawan PKWT Lain');
     }
 }

@@ -13,6 +13,27 @@
 }
 .sort-link { color: inherit; text-decoration: none; }
 .sort-link:hover { color: var(--hijau-tua); }
+.quick-status-pill.active-status-btn {
+    background: var(--hijau-tua) !important;
+    color: #fff !important;
+    border-color: var(--hijau-tua) !important;
+    box-shadow: 0 2px 6px rgba(30, 86, 49, 0.25);
+}
+.quick-status-pill[data-status="BHL"].active-status-btn {
+    background: #6d28d9 !important;
+    border-color: #6d28d9 !important;
+    color: #fff !important;
+}
+.quick-status-pill[data-status="BHL"]:not(.active-status-btn) {
+    border-color: #d8b4fe;
+    color: #6d28d9;
+    background: #faf5ff;
+}
+.quick-status-pill[data-status="BHL"]:not(.active-status-btn):hover {
+    background: #ede9fe;
+    border-color: #c084fc;
+    color: #581c87;
+}
 </style>
 @endpush
 
@@ -57,6 +78,60 @@
             <i class="bi bi-trash3-fill"></i> Hapus Semua Data Karyawan
         </button>
         @endif @endauth
+
+        {{-- Tombol Export dengan Opsi --}}
+        <div class="dropdown d-inline-block" id="exportDropdownWrapper">
+            <button class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm dropdown-toggle d-inline-flex align-items-center gap-1"
+                    type="button" id="dropdownExportBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-file-earmark-excel-fill text-success"></i>
+                <span id="exportBtnText">
+                    @if($activeFilters > 0)
+                        Export Filter ({{ number_format($employees->total()) }})
+                    @else
+                        Export Excel
+                    @endif
+                </span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="dropdownExportBtn" style="font-size:13px;border-radius:12px;border:1px solid #c8dfd0;min-width:240px">
+                <li class="dropdown-header text-muted" style="font-size:11px;font-weight:700;text-transform:uppercase">
+                    <span id="exportDropdownHeader">
+                        @if($activeFilters > 0)
+                            Export Hasil Filter ({{ number_format($employees->total()) }} data)
+                        @else
+                            Export Seluruh Karyawan ({{ number_format($employees->total()) }} data)
+                        @endif
+                    </span>
+                </li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 py-2" id="exportLengkapLink"
+                       href="{{ route('employees.export', array_merge(request()->query(), ['include_family' => '1'])) }}">
+                        <i class="bi bi-people-fill text-success fs-6"></i>
+                        <div>
+                            <div class="fw-600">Mode Lengkap (+ Batih)</div>
+                            <small class="text-muted" style="font-size:11px">Sertakan anggota keluarga/batih</small>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 py-2" id="exportRingkasLink"
+                       href="{{ route('employees.export', array_merge(request()->query(), ['include_family' => '0'])) }}">
+                        <i class="bi bi-person-fill text-primary fs-6"></i>
+                        <div>
+                            <div class="fw-600">Mode Ringkas (Tanpa Batih)</div>
+                            <small class="text-muted" style="font-size:11px">1 baris per karyawan</small>
+                        </div>
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-muted" id="exportCustomLink"
+                       href="{{ route('employees.export.form', request()->query()) }}">
+                        <i class="bi bi-sliders2 fs-6"></i>
+                        <span>Kustomisasi Ekspor Sheet...</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
 
         <button class="btn btn-hijau btn-sm rounded-pill px-3 filter-toggle-btn shadow-sm d-inline-flex align-items-center gap-1"
                 type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" id="filterToggleBtn">
@@ -177,6 +252,70 @@
                     </div>
                 </div>
 
+                {{-- Filter Pendidikan Terakhir --}}
+                <div class="filter-group">
+                    <div class="filter-group-title">
+                        Pendidikan Terakhir
+                        @if(request('pendidikan')) <span class="filter-badge">{{ count(request('pendidikan')) }}</span> @endif
+                    </div>
+                    <div class="filter-list">
+                        @foreach($pendidikanList as $pend)
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="pendidikan[]"
+                                   value="{{ $pend }}" id="pend{{ Str::slug($pend) }}"
+                                   {{ in_array($pend, request('pendidikan',[]))?'checked':'' }}>
+                            <label class="form-check-label" for="pend{{ Str::slug($pend) }}">{{ $pend }}</label>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Filter Masa Pensiun --}}
+                <div class="filter-group">
+                    <div class="filter-group-title">
+                        Masa Pensiun (55 Thn)
+                        @if(request('pensiun')) <span class="filter-badge">{{ count(request('pensiun')) }}</span> @endif
+                    </div>
+                    <div class="filter-list">
+                        @foreach($masaPensiunList as $mp)
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="pensiun[]"
+                                   value="{{ $mp }}" id="pensiun{{ Str::slug($mp) }}"
+                                   {{ in_array($mp, request('pensiun',[]))?'checked':'' }}>
+                            <label class="form-check-label d-flex align-items-center justify-content-between" for="pensiun{{ Str::slug($mp) }}">
+                                <span>{{ $mp }}</span>
+                                @if($mp === '≤ 1 Tahun')
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size:9.5px;padding:2px 6px">≤ 1 Thn Lagi</span>
+                                @endif
+                            </label>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Filter Penghargaan Masa Kerja --}}
+                <div class="filter-group">
+                    <div class="filter-group-title">
+                        Penghargaan
+                        @if(request('penghargaan')) <span class="filter-badge">{{ count(request('penghargaan')) }}</span> @endif
+                    </div>
+                    <div class="filter-list">
+                        @foreach($penghargaanList as $penghargaan)
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="penghargaan[]"
+                                   value="{{ $penghargaan }}" id="penghargaan{{ Str::slug($penghargaan) }}"
+                                   {{ in_array($penghargaan, request('penghargaan',[]))?'checked':'' }}>
+                            <label class="form-check-label d-flex align-items-center justify-content-between" for="penghargaan{{ Str::slug($penghargaan) }}">
+                                <span>{{ $penghargaan }}</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1" style="font-size:9.5px;padding:2px 6px">
+                                    <i class="bi bi-award-fill me-1"></i>{{ $penghargaan === '35 Tahun' ? '≥ 35 Thn' : ($penghargaan === '30 Tahun' ? '30–34 Thn' : '25–29 Thn') }}
+                                </span>
+                            </label>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
                 {{-- Filter Rentang Usia --}}
                 <div class="filter-group">
                     <div class="filter-group-title">Rentang Usia</div>
@@ -263,6 +402,46 @@
             </div>
         </form>
 
+        {{-- Quick Status Filter Pills --}}
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-3 p-2 bg-white rounded-3 border" id="quickStatusFilterPills" style="box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div class="d-flex align-items-center gap-1 text-muted fw-600 px-1" style="font-size:12px">
+                <i class="bi bi-funnel"></i> Status:
+            </div>
+            @php
+                $currentStatuses = (array) request('statuses', []);
+                $isAllActive = empty($currentStatuses);
+            @endphp
+            <button type="button" 
+                    class="btn btn-sm rounded-pill px-3 py-1 fw-600 quick-status-pill {{ $isAllActive ? 'active-status-btn btn-hijau' : 'btn-outline-secondary' }}" 
+                    style="font-size:12px;"
+                    onclick="selectQuickStatus('')">
+                Semua
+                <span class="badge rounded-pill ms-1 {{ $isAllActive ? 'bg-white text-dark' : 'bg-light text-dark border' }}">
+                    {{ number_format($totalActiveEmployees ?? $employees->total()) }}
+                </span>
+            </button>
+
+            @foreach($statuses as $st)
+                @php
+                    $isActive = in_array($st, $currentStatuses);
+                    $count = $statusCounts[$st] ?? 0;
+                @endphp
+                <button type="button" 
+                        class="btn btn-sm rounded-pill px-3 py-1 fw-600 quick-status-pill {{ $isActive ? 'active-status-btn' : 'btn-outline-secondary' }}"
+                        data-status="{{ $st }}"
+                        style="font-size:12px; transition: all .15s ease;"
+                        onclick="toggleQuickStatus('{{ $st }}')">
+                    @if(str_contains($st, 'BHL'))
+                        <i class="bi bi-person-badge me-1" style="color:{{ $isActive ? '#fff' : '#6d28d9' }}"></i>
+                    @endif
+                    {{ $st }}
+                    <span class="badge rounded-pill ms-1 {{ $isActive ? 'bg-white text-dark' : 'bg-light text-muted border' }}">
+                        {{ number_format($count) }}
+                    </span>
+                </button>
+            @endforeach
+        </div>
+
         {{-- Active Filter Chips --}}
         <div id="activeFilterChipsContainer">
             @if($activeFilters > 0)
@@ -304,6 +483,24 @@
                     <a href="{{ request()->fullUrlWithoutQuery(['agama']) }}" style="color:inherit" onclick="removeFilterParam(event, 'agama')"><i class="bi bi-x-circle"></i></a>
                 </span>
                 @endif
+                @if(request('pendidikan'))
+                <span class="active-filter-chip">
+                    Pendidikan: {{ implode(', ', request('pendidikan')) }}
+                    <a href="{{ request()->fullUrlWithoutQuery(['pendidikan']) }}" style="color:inherit" onclick="removeFilterParam(event, 'pendidikan')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('pensiun'))
+                <span class="active-filter-chip">
+                    Pensiun: {{ implode(', ', request('pensiun')) }}
+                    <a href="{{ request()->fullUrlWithoutQuery(['pensiun']) }}" style="color:inherit" onclick="removeFilterParam(event, 'pensiun')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
+                @if(request('penghargaan'))
+                <span class="active-filter-chip">
+                    Penghargaan: {{ implode(', ', request('penghargaan')) }}
+                    <a href="{{ request()->fullUrlWithoutQuery(['penghargaan']) }}" style="color:inherit" onclick="removeFilterParam(event, 'penghargaan')"><i class="bi bi-x-circle"></i></a>
+                </span>
+                @endif
                 @if(request('rentang_usia'))
                 <span class="active-filter-chip">
                     Usia ({{ count(request('rentang_usia')) }})
@@ -322,6 +519,9 @@
                     <a href="{{ request()->fullUrlWithoutQuery(['lokasi']) }}" style="color:inherit" onclick="removeFilterParam(event, 'lokasi')"><i class="bi bi-x-circle"></i></a>
                 </span>
                 @endif
+                <a href="{{ route('employees.export', array_merge(request()->query(), ['include_family' => '1'])) }}" class="btn btn-sm btn-hijau rounded-pill" style="font-size:11px" id="quickExportChipBtn" title="Download Excel data hasil filter">
+                    <i class="bi bi-file-earmark-excel-fill me-1"></i>Export Hasil Filter ({{ number_format($employees->total()) }})
+                </a>
                 <a href="{{ route('employees.index') }}" class="btn btn-sm btn-outline-danger rounded-pill" style="font-size:11px" onclick="resetFiltersAjax(event)">
                     <i class="bi bi-x-circle me-1"></i>Reset Semua
                 </a>
@@ -376,6 +576,7 @@
                                 str_contains($k->status_karyawan??'', 'Karpel') => 'badge-karpel',
                                 str_contains($k->status_karyawan??'', 'PKWT')   => 'badge-pkwt',
                                 str_contains($k->status_karyawan??'', 'KTNG')   => 'badge-ktng',
+                                str_contains($k->status_karyawan??'', 'BHL')    => 'badge-bhl',
                                 str_contains($k->status_karyawan??'', 'Papam')  => 'badge-papam',
                                 default => 'bg-secondary text-white',
                             };
@@ -388,23 +589,63 @@
                                     {{ $k->nama }}
                                 </a>
                             </td>
-                            <td style="font-size:12.5px;color:#2c3e50">{{ $k->personnel_number ?? '-' }}</td>
-                            <td style="font-size:12.5px">{{ $k->bagian?->nama_bagian ?? '-' }}</td>
-                            <td style="font-size:12.5px">{{ $k->jabatan?->nama_jabatan ?? '-' }}</td>
-                            <td>
-                                <i class="bi {{ $k->jenis_kelamin=='Laki-Laki'?'bi-gender-male text-primary':'bi-gender-female text-danger' }}"
-                                   title="{{ $k->jenis_kelamin }}"></i>
+                            <td style="font-size:12.5px;color:#2c3e50">{{ $k->personnel_number ?: '-' }}</td>
+                            <td style="font-size:12.5px">{{ $k->bagian?->nama_bagian ?: '-' }}</td>
+                            <td style="font-size:12.5px">
+                                <div>{{ $k->jabatan?->nama_jabatan ?: '-' }}</div>
+                                @if($k->pendidikan_terakhir)
+                                <div class="text-muted" style="font-size:11px" title="Pendidikan Terakhir">
+                                    <i class="bi bi-mortarboard me-1"></i>{{ $k->pendidikan_terakhir }}
+                                </div>
+                                @endif
                             </td>
                             <td>
-                                <span class="badge {{ $badgeClass }}" style="font-size:10.5px">
-                                    {{ $k->status_karyawan ?? '-' }}
-                                </span>
+                                @if($k->jenis_kelamin === 'Laki-Laki')
+                                    <i class="bi bi-gender-male text-primary fs-6" title="Laki-Laki"></i>
+                                @elseif($k->jenis_kelamin === 'Perempuan')
+                                    <i class="bi bi-gender-female text-danger fs-6" title="Perempuan"></i>
+                                @else
+                                    <span class="text-muted" title="Belum Diisi">-</span>
+                                @endif
                             </td>
                             <td>
-                                @if($k->tanggal_pensiun)
+                                <div class="d-flex flex-column gap-1 align-items-start">
+                                    <span class="badge {{ $badgeClass }}" style="font-size:10.5px">
+                                        {{ $k->status_karyawan ?: '-' }}
+                                    </span>
+                                    @if(!empty($k->domisili))
+                                    <span class="badge {{ $k->domisili === 'Lokal' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' }}" style="font-size:9.5px" title="Domisili: {{ $k->domisili }}">
+                                        <i class="bi bi-geo-alt-fill me-1"></i>{{ $k->domisili }}
+                                    </span>
+                                    @else
+                                    <span class="text-muted" style="font-size:11px" title="Domisili belum diisi">-</span>
+                                    @endif
+                                    @if($k->penghargaan_masa_kerja)
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size:9.5px" title="Penghargaan Masa Kerja {{ $k->penghargaan_masa_kerja }}">
+                                        <i class="bi bi-award-fill me-1"></i>{{ $k->penghargaan_masa_kerja }}
+                                    </span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td>
+                                @if(str_contains(strtoupper($k->status_karyawan ?? ''), 'BHL'))
+                                    <span class="text-muted" style="font-size:12px">-</span>
+                                @elseif($k->tanggal_pensiun)
                                     <div style="font-size:12px;font-weight:600;white-space:nowrap">{{ $k->tanggal_pensiun->format('d M Y') }}</div>
-                                    <div style="font-size:10.5px;font-weight:500;white-space:nowrap;color:{{ $k->sisa_waktu_pensiun === 'Sudah Pensiun' ? '#dc3545' : '#198754' }}">
-                                        {{ $k->sisa_waktu_pensiun }}
+                                    @php
+                                        $isMendekati = str_contains($k->sisa_waktu_pensiun ?? '', 'bulan') || str_contains($k->sisa_waktu_pensiun ?? '', 'hari');
+                                        $isSudahPensiun = ($k->sisa_waktu_pensiun ?? '') === 'Sudah Pensiun';
+                                        $colorPensiun = match(true) {
+                                            $isSudahPensiun => '#dc3545',
+                                            $isMendekati => '#b45309',
+                                            default => '#198754',
+                                        };
+                                    @endphp
+                                    <div style="font-size:10.5px;font-weight:500;white-space:nowrap;color:{{ $colorPensiun }}">
+                                        @if($isMendekati && !$isSudahPensiun)
+                                            <i class="bi bi-clock-history me-1 text-warning"></i>
+                                        @endif
+                                        {{ $k->sisa_waktu_pensiun ?: '-' }}
                                     </div>
                                 @else
                                     <span class="text-muted" style="font-size:12px">-</span>
@@ -617,7 +858,42 @@ function applyRealtimeFilter() {
             oldBadge.remove();
         }
 
-        // 5. Update URL Browser tanpa reload halaman
+        // 5. Update Tombol & Link Export agar selalu mengikuti filter terkini
+        const exportLengkap = document.getElementById('exportLengkapLink');
+        const exportRingkas = document.getElementById('exportRingkasLink');
+        const exportCustom = document.getElementById('exportCustomLink');
+        const exportBtnText = document.getElementById('exportBtnText');
+        const exportHeader = document.getElementById('exportDropdownHeader');
+
+        const exportUrl = '{{ route("employees.export") }}';
+        const exportFormUrl = '{{ route("employees.export.form") }}';
+
+        const pFam = new URLSearchParams(params);
+        pFam.set('include_family', '1');
+        const pNoFam = new URLSearchParams(params);
+        pNoFam.set('include_family', '0');
+
+        if (exportLengkap) exportLengkap.href = exportUrl + '?' + pFam.toString();
+        if (exportRingkas) exportRingkas.href = exportUrl + '?' + pNoFam.toString();
+        if (exportCustom) exportCustom.href = exportFormUrl + '?' + params.toString();
+
+        const newExportText = doc.getElementById('exportBtnText');
+        if (newExportText && exportBtnText) {
+            exportBtnText.innerHTML = newExportText.innerHTML;
+        }
+        const newExportHeader = doc.getElementById('exportDropdownHeader');
+        if (newExportHeader && exportHeader) {
+            exportHeader.innerHTML = newExportHeader.innerHTML;
+        }
+
+        // 6. Update Quick Status Filter Pills
+        const newPills = doc.getElementById('quickStatusFilterPills');
+        const oldPills = document.getElementById('quickStatusFilterPills');
+        if (newPills && oldPills) {
+            oldPills.innerHTML = newPills.innerHTML;
+        }
+
+        // 7. Update URL Browser tanpa reload halaman
         window.history.replaceState({}, '', url);
     })
     .catch(err => {
@@ -651,6 +927,38 @@ function removeFilterParam(e, paramName) {
         if (topSearch) topSearch.value = '';
     }
 
+    applyRealtimeFilter();
+}
+
+function selectQuickStatus(status) {
+    const checkboxes = document.querySelectorAll('#filterForm input[name="statuses[]"]');
+    checkboxes.forEach(cb => {
+        cb.checked = (status !== '' && cb.value === status);
+    });
+    applyRealtimeFilter();
+}
+
+function toggleQuickStatus(status) {
+    const checkboxes = document.querySelectorAll('#filterForm input[name="statuses[]"]');
+    let matched = false;
+    checkboxes.forEach(cb => {
+        if (cb.value === status) {
+            cb.checked = !cb.checked;
+            matched = true;
+        } else {
+            cb.checked = false;
+        }
+    });
+    if (!matched && status !== '') {
+        // If checkbox not rendered in panel yet, check if we need to create it
+        const container = document.querySelector('#filterForm .filter-list');
+        if (container) {
+            const div = document.createElement('div');
+            div.className = 'form-check';
+            div.innerHTML = `<input class="form-check-input" type="checkbox" name="statuses[]" value="${status}" id="status${status}" checked>`;
+            container.appendChild(div);
+        }
+    }
     applyRealtimeFilter();
 }
 </script>

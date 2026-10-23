@@ -218,7 +218,7 @@
         .table-simkar .btn-action.btn-action-danger:hover {
             background: #fde8e8; color: #c0392b; border-color: #f5c2c2;
         }
-        .badge-karpim, .badge-karpel, .badge-pkwt, .badge-ktng, .badge-papam {
+        .badge-karpim, .badge-karpel, .badge-pkwt, .badge-ktng, .badge-papam, .badge-bhl {
             font-weight: 600; border-radius: 6px; padding: 4px 9px; font-size: 11px;
             display: inline-flex; align-items: center; gap: 4px; letter-spacing: .2px;
         }
@@ -226,6 +226,7 @@
         .badge-karpel  { background: var(--hijau-light); color: var(--hijau-tua); border: 1px solid #c8e6c9; }
         .badge-pkwt    { background: #fff3e0; color: #c46616; border: 1px solid #ffe0b2; }
         .badge-ktng    { background: #e0f2f1; color: #00695c; border: 1px solid #b2dfdb; }
+        .badge-bhl     { background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; }
         .badge-papam   { background: #f3e8fd; color: #6a1b9a; border: 1px solid #e1bee7; }
         .form-control, .form-select {
             border: 1.5px solid #d4e8da; border-radius: 10px; font-size: 13px;
@@ -379,6 +380,10 @@
 
         <a href="{{ route('employees.index') }}" class="nav-link {{ request()->routeIs('employees.*') && !request()->routeIs('employees.import*') && !request()->routeIs('employees.export*') ? 'active' : '' }}">
             <i class="bi bi-people-fill"></i> <span class="nav-link-text">Data Karyawan</span>
+        </a>
+
+        <a href="{{ route('leaves.index') }}" class="nav-link {{ request()->routeIs('leaves.*') ? 'active' : '' }}">
+            <i class="bi bi-calendar2-check-fill"></i> <span class="nav-link-text">Jadwal & Hak Cuti</span>
         </a>
 
         <a href="{{ route('employees.export.form') }}" class="nav-link {{ request()->routeIs('employees.export*') ? 'active' : '' }}">

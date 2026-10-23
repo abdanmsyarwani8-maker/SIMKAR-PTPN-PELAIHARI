@@ -23,6 +23,7 @@ class UpdateEmployeeRequest extends FormRequest
             'nama' => 'required|string|max:255',
             'tanggal_lahir' => 'nullable|date|before:today',
             'tanggal_mulai_kerja' => 'nullable|date|before_or_equal:today',
+            'tmt_cuti' => 'nullable|date',
             'jenis_kelamin' => 'required|in:Laki-Laki,Perempuan,Tidak Diketahui',
             'agama' => 'nullable|string|max:50',
             'pendidikan_terakhir' => 'nullable|string|max:20',
@@ -37,6 +38,7 @@ class UpdateEmployeeRequest extends FormRequest
             'grade' => 'nullable|string|max:20',
             'suku' => 'nullable|string|max:50',
             'alamat' => 'nullable|string',
+            'domisili' => 'nullable|string|max:30',
             'sumber_lembar' => 'nullable|string|max:20',
             'catatan' => 'nullable|string',
         ];

@@ -5,6 +5,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeExportController;
 use App\Http\Controllers\EmployeeFamilyController;
 use App\Http\Controllers\EmployeeImportController;
+use App\Http\Controllers\EmployeeLeaveController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ── Data Karyawan ─────────────────────────────────────────
     Route::get('/karyawan', [EmployeeController::class, 'index'])->name('employees.index');
+
+    // ── Jadwal & Hak Cuti ─────────────────────────────────────
+    Route::get('/cuti', [EmployeeLeaveController::class, 'index'])->name('leaves.index');
+    Route::get('/cuti/export', [EmployeeLeaveController::class, 'export'])->name('leaves.export');
 
     // ── Export Excel (Dapat diakses Admin maupun User) ────────
     Route::get('/karyawan/export', [EmployeeExportController::class, 'showForm'])->name('employees.export.form');

@@ -82,7 +82,31 @@
             </div>
 
             <div class="card-body p-4">
+                @if(!empty($hasActiveFilter))
+                <div class="alert alert-info d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4 p-3 rounded-3" style="background:#eaf4fd;border:1px solid #b6e0fe">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-funnel-fill text-primary fs-5 flex-shrink-0"></i>
+                        <div style="font-size:13px;color:#055160;line-height:1.5">
+                            <strong>Ekspor Berdasarkan Filter:</strong> Data yang diekspor akan disaring sesuai <strong>{{ $activeFilters }} filter aktif</strong> dari halaman karyawan (Total: <strong>{{ number_format($totalEmployee) }}</strong> karyawan).
+                        </div>
+                    </div>
+                    <a href="{{ route('employees.export.form') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3" style="font-size:12px">
+                        <i class="bi bi-x-circle me-1"></i>Ekspor Seluruh Data
+                    </a>
+                </div>
+                @endif
+
                 <form method="GET" action="{{ route('employees.export') }}" id="exportForm">
+                    {{-- Pertahankan filter dari halaman index --}}
+                    @foreach(request()->except(['categories', 'include_family']) as $k => $v)
+                        @if(is_array($v))
+                            @foreach($v as $subV)
+                                <input type="hidden" name="{{ $k }}[]" value="{{ $subV }}">
+                            @endforeach
+                        @else
+                            <input type="hidden" name="{{ $k }}" value="{{ $v }}">
+                        @endif
+                    @endforeach
                     
                     {{-- 1. Pilihan Status / Kategori Karyawan --}}
                     <div class="mb-4">
@@ -176,7 +200,26 @@
                                     </span>
                                 </div>
                                 <div class="text-muted mt-1" style="font-size:12.5px">
-                                    Tenaga kerja tidak tetap / buruh harian lepas musiman kebun.
+                                    Tenaga kerja tidak tetap musiman kebun.
+                                </div>
+                            </div>
+                        </label>
+
+                        {{-- Category Card: BHL --}}
+                        <label class="category-card selected" for="cat_bhl" id="card_bhl">
+                            <input class="form-check-input export-cat-check" type="checkbox" name="categories[]" value="BHL" id="cat_bhl" checked onchange="updateSelectionState()">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                                    <div>
+                                        <span class="badge badge-bhl me-2">BHL</span>
+                                        <strong style="color:var(--hijau-tua);font-size:14px">Buruh Harian Lepas</strong>
+                                    </div>
+                                    <span class="badge rounded-pill px-2 py-1" style="font-size:12px;background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe">
+                                        {{ number_format($countBhl) }} Karyawan
+                                    </span>
+                                </div>
+                                <div class="text-muted mt-1" style="font-size:12.5px">
+                                    Tenaga kerja buruh harian lepas afdeling/kebun.
                                 </div>
                             </div>
                         </label>
@@ -241,13 +284,14 @@
                                 <i class="bi bi-file-earmark-ruled me-1"></i> Struktur Sheet yang Akan Dihasilkan:
                             </div>
                             <span class="badge" id="sheetCountBadge" style="background:var(--hijau-tua);font-size:12px">
-                                3 Sheet
+                                4 Sheet
                             </span>
                         </div>
                         <div class="d-flex flex-wrap gap-2" id="sheetPreviewList">
                             <span class="sheet-preview-pill" id="pill_pkwt"><i class="bi bi-table"></i> Sheet 1: PKWT ({{ $countPkwt }} data)</span>
-                            <span class="sheet-preview-pill" id="pill_karpim"><i class="bi bi-table"></i> Sheet 2: Karpim &amp; Karpel ({{ $countKarpim }} data)</span>
-                            <span class="sheet-preview-pill" id="pill_ktng"><i class="bi bi-table"></i> Sheet 3: KTNG ({{ $countKtng }} data)</span>
+                            <span class="sheet-preview-pill" id="pill_karpim"><i class="bi bi-table"></i> Sheet 2: Karpim ({{ $countKarpim }} data)</span>
+                            <span class="sheet-preview-pill" id="pill_karpel"><i class="bi bi-table"></i> Sheet 3: Karpel ({{ $countKarpel }} data)</span>
+                            <span class="sheet-preview-pill" id="pill_ktng"><i class="bi bi-table"></i> Sheet 4: KTNG ({{ $countKtng }} data)</span>
                         </div>
                         <div id="noSheetWarning" class="text-danger small mt-2 d-none">
                             <i class="bi bi-exclamation-triangle-fill me-1"></i> Silakan pilih minimal 1 kategori karyawan untuk diekspor.
@@ -289,8 +333,8 @@
                     <li>Pilih status karyawan yang ingin Anda sertakan dalam file.</li>
                     <li>Tentukan apakah ingin <strong>Menyertakan Data Keluarga</strong> atau <strong>Tanpa Data Keluarga</strong>.</li>
                     <li>Jika Anda memilih <strong>1 status</strong>, file akan berisi <strong>1 sheet</strong>.</li>
-                    <li>Jika memilih <strong>2 status</strong> (misal PKWT &amp; KTNG), file akan berisi <strong>2 sheet</strong>.</li>
-                    <li>Jika memilih <strong>ketiganya</strong>, file akan berisi <strong>3 sheet</strong> lengkap.</li>
+                    <li>Jika memilih <strong>2 status</strong> (misal Karpim &amp; Karpel), file akan berisi <strong>2 sheet</strong>.</li>
+                    <li>Jika memilih <strong>semuanya</strong>, file akan berisi <strong>4 sheet</strong> lengkap.</li>
                     <li>Klik tombol <strong>Download File Excel</strong> untuk memulai unduhan.</li>
                 </ol>
             </div>
@@ -303,12 +347,12 @@
                 <span>Standar Output Excel SIMKAR</span>
             </div>
             <div class="card-body" style="font-size:12.5px;line-height:1.7">
-                <div class="fw-700 mb-1" style="color:var(--hijau-tua)">Kolom Data Karyawan (14 Kolom Standar):</div>
+                <div class="fw-700 mb-1" style="color:var(--hijau-tua)">Kolom Data Karyawan (15 Kolom Standar):</div>
                 <div class="text-muted mb-2">
                     <ul class="ps-3 mb-0" style="line-height:1.6">
                         <li><strong>Sheet PKWT:</strong> Menyertakan kolom <em>No. PKWT</em> (tanpa kolom Golongan).</li>
                         <li><strong>Sheet Non-PKWT:</strong> Menyertakan kolom <em>Golongan</em> (tanpa kolom No. PKWT).</li>
-                        <li><strong>Kolom Bersama:</strong> NIK SAP, Nama, Status, TMT Kerja, Tanggal Lahir, Jenis Kelamin, Agama, Pendidikan Terakhir, Grade, Bagian, Jabatan, Suku, Alamat.</li>
+                        <li><strong>Kolom Bersama:</strong> NIK SAP, Nama, Status, TMT Kerja, Tanggal Lahir, Jenis Kelamin, Agama, Pendidikan Terakhir, Grade, Bagian, Jabatan, Suku, Alamat, Domisili (Lokal/Non-Lokal).</li>
                     </ul>
                 </div>
 
@@ -337,8 +381,10 @@
 <script>
 const counts = {
     'PKWT': {{ $countPkwt }},
-    'Karpim & Karpel': {{ $countKarpim }},
-    'KTNG': {{ $countKtng }}
+    'Karpim': {{ $countKarpim }},
+    'Karpel': {{ $countKarpel }},
+    'KTNG': {{ $countKtng }},
+    'BHL': {{ $countBhl }}
 };
 
 function updateSelectionState() {
@@ -346,7 +392,8 @@ function updateSelectionState() {
     const checkedValues = [];
 
     checks.forEach(cb => {
-        const card = document.getElementById('card_' + (cb.value === 'PKWT' ? 'pkwt' : (cb.value === 'KTNG' ? 'ktng' : 'karpim')));
+        const catKey = cb.value.toLowerCase();
+        const card = document.getElementById('card_' + catKey);
         if (card) {
             if (cb.checked) {
                 card.classList.add('selected');

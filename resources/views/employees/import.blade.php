@@ -142,12 +142,12 @@
                     <ul class="ps-3 mb-2" style="line-height:1.7">
                         <li><strong>NIK SAP</strong> / Personnel Number (Identitas Utama)</li>
                         <li>Nama Karyawan / Employee Name</li>
-                        <li>Kategori: PKWT, KTNG, Karpim &amp; Karpel</li>
+                        <li>Kategori: PKWT, KTNG, Karpim, Karpel</li>
                         <li>No. PKWT / Kontrak</li>
                         <li>TMT Kerja / Tanggal Mulai Kerja</li>
                         <li>Tanggal Lahir Karyawan</li>
                         <li>Jenis Kelamin, Agama, Pendidikan</li>
-                        <li>Grade, Suku, Alamat</li>
+                        <li>Grade, Suku, Alamat, Domisili (Lokal/Non-Lokal)</li>
                         <li>Bagian, Jabatan</li>
                     </ul>
 
@@ -174,7 +174,7 @@
                     </div>
                     <div class="small mt-1">
                         <i class="bi bi-file-earmark-excel text-success me-1"></i>
-                        Data Karyawan (PKWT, KTNG, Karpim &amp; Karpel)
+                        Data Karyawan (PKWT, KTNG, Karpim, Karpel)
                         <span class="badge bg-light text-dark ms-1">Multi-sheet</span>
                     </div>
                 </div>
