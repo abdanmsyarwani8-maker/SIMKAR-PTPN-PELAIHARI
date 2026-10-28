@@ -239,10 +239,18 @@
                 <div class="fw-700" style="color:var(--hijau-tua); font-size:15px;">
                     <i class="bi bi-calendar2-check-fill me-2 text-success"></i> Hak & Jadwal Cuti Karyawan
                 </div>
-                <a href="{{ route('leaves.index', ['q' => $employee->personnel_number ?: $employee->nama]) }}"
-                   class="btn btn-sm btn-hijau-outline rounded-pill px-3" style="font-size:12px;">
-                    <i class="bi bi-box-arrow-up-right me-1"></i> Buka Monitoring Cuti
-                </a>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="{{ route('leaves.index', ['q' => $employee->personnel_number ?: $employee->nama]) }}"
+                       class="btn btn-sm btn-hijau-outline rounded-pill px-3" style="font-size:12px;">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Buka Monitoring Cuti
+                    </a>
+                    @auth @if(auth()->user()->isAdmin())
+                    <a href="{{ route('leaves.edit', $employee) }}"
+                       class="btn btn-sm btn-hijau rounded-pill px-3" style="font-size:12px;">
+                        <i class="bi bi-pencil-square me-1"></i> Edit Data Cuti
+                    </a>
+                    @endif @endauth
+                </div>
             </div>
             <div class="card-body">
                 <div class="row g-3">

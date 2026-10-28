@@ -11,15 +11,16 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $karyawanAktif = Employee::active();
+        $karyawanAktif = Employee::karyawanAktif();
 
         // Statistik utama
         $totalKaryawan = (clone $karyawanAktif)->count();
+        $totalBhl = Employee::bhl()->count();
         $totalBatih = EmployeeFamily::count();
         $totalBagian = Bagian::count();
         $totalJabatan = Jabatan::count();
 
-        // Rekap status karyawan
+        // Rekap status karyawan (khusus karyawan aktif)
         $rekapStatus = (clone $karyawanAktif)
             ->selectRaw('status_karyawan, COUNT(*) as total')
             ->groupBy('status_karyawan')
@@ -95,6 +96,7 @@ class DashboardController extends Controller
 
         return view('dashboard', compact(
             'totalKaryawan',
+            'totalBhl',
             'totalBatih',
             'totalBagian',
             'totalJabatan',

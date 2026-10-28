@@ -129,10 +129,11 @@
             </ul>
         </div>
 
+
         {{-- Tombol Export Excel Rekap Cuti --}}
         <a href="{{ route('leaves.export', array_merge(request()->query(), ['year' => $selectedYear])) }}"
            class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1" style="font-size:12.5px;font-weight:600">
-            <i class="bi bi-file-earmark-excel-fill text-success"></i> Export Excel Rekap Cuti
+            <i class="bi bi-file-earmark-excel-fill text-success"></i> Export Rekap Cuti
         </a>
 
         {{-- Tombol Filter (Toggle) --}}
@@ -418,7 +419,6 @@
                                 <th>Bagian / Afd</th>
                                 <th>Jabatan</th>
                                 <th>Status</th>
-                                <th class="text-center">TMT Kerja</th>
                                 <th class="text-center">TMT Cuti</th>
                                 <th class="text-center">Bulan Tempo</th>
                                 <th class="text-center">Hak Cuti Thn {{ $selectedYear }}</th>
@@ -456,9 +456,6 @@
                                     <span class="badge {{ $badgeClass }}" style="font-size:10.5px">
                                         {{ $emp->status_karyawan ?: '-' }}
                                     </span>
-                                </td>
-                                <td class="text-center" style="font-size:12px;font-weight:500">
-                                    {{ $emp->tanggal_mulai_kerja ? $emp->tanggal_mulai_kerja->format('d/m/Y') : '-' }}
                                 </td>
                                 <td class="text-center" style="font-size:12px;font-weight:600;color:var(--hijau-tua)">
                                     {{ $emp->tmt_cuti ? $emp->tmt_cuti->format('d/m/Y') : '-' }}
@@ -500,9 +497,22 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="d-flex gap-1 justify-content-center">
-                                        <a href="{{ route('employees.show', $emp) }}" class="btn-action" title="Lihat Profil & Riwayat Cuti">
+                                        <a href="{{ route('employees.show', $emp) }}" class="btn-action" title="Lihat Profil">
                                             <i class="bi bi-eye"></i>
                                         </a>
+                                        @auth @if(auth()->user()->isAdmin())
+                                        <a href="{{ route('leaves.edit', $emp) }}" class="btn-action" title="Edit Data Cuti">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form method="POST" action="{{ route('leaves.destroy', $emp) }}"
+                                              onsubmit="return confirm('Reset TMT Cuti karyawan {{ addslashes($emp->nama) }}?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-action text-danger" title="Reset TMT Cuti">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                        @endif @endauth
                                     </div>
                                 </td>
                             </tr>

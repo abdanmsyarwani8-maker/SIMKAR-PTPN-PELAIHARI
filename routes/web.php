@@ -37,6 +37,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ── Operasi Karyawan: Hanya Admin ────────────────────────
     Route::middleware('admin')->group(function () {
+        // ── Edit / Hapus Data Cuti Karyawan (Hak Cuti) ───────────
+        Route::get('/cuti/{employee}/edit', [EmployeeLeaveController::class, 'edit'])->name('leaves.edit');
+        Route::put('/cuti/{employee}', [EmployeeLeaveController::class, 'update'])->name('leaves.update');
+        Route::delete('/cuti/{employee}', [EmployeeLeaveController::class, 'destroy'])->name('leaves.destroy');
+
         Route::get('/karyawan/tambah', [EmployeeController::class, 'create'])->name('employees.create');
         Route::post('/karyawan', [EmployeeController::class, 'store'])->name('employees.store');
         Route::delete('/karyawan/hapus-semua', [EmployeeController::class, 'destroyAll'])->name('employees.destroy-all');

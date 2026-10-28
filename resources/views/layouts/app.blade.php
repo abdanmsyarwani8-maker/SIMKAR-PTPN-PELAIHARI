@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'SIMKAR') — PTPN IV Kebun Pelaihari Regional 5</title>
+    <title>@yield('title', 'SIMKAR') â€” PTPN IV Kebun Pelaihari Regional 5</title>
     <meta name="description" content="Sistem Informasi Manajemen Karyawan PTPN IV Kebun Pelaihari Regional 5">
 
     <!-- Google Fonts -->
@@ -38,7 +38,7 @@
             overflow-x: hidden;
         }
 
-        /* ── SIDEBAR ─────────────────────────────── */
+        /* â”€â”€ SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .sidebar {
             position: fixed;
             top: 0; left: 0; bottom: 0;
@@ -110,7 +110,7 @@
         .sidebar-user .user-name { color: #fff; font-size: 12.5px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; }
         .sidebar-user .user-role { color: rgba(255,255,255,.5); font-size: 10.5px; }
 
-        /* ── TOMBOL TOGGLE DESKTOP (POSISI DI GARIS MERAH) ── */
+        /* â”€â”€ TOMBOL TOGGLE DESKTOP (POSISI DI GARIS MERAH) â”€â”€ */
         .btn-sidebar-toggle-desktop {
             position: fixed;
             top: 50%; /* Posisi tengah vertikal */
@@ -134,7 +134,7 @@
             transform: translateY(-50%) scale(1.1);
         }
         
-        /* ── MINI SIDEBAR ──────────────── */
+        /* â”€â”€ MINI SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         body.sidebar-mini .sidebar { width: var(--sidebar-mini-w); }
         body.sidebar-mini .btn-sidebar-toggle-desktop { left: calc(var(--sidebar-mini-w) - 14px); } /* Ikut bergeser saat dikecilkan */
         
@@ -150,7 +150,7 @@
         body.sidebar-mini .main-content { margin-left: var(--sidebar-mini-w); }
         body.sidebar-mini .topbar { left: var(--sidebar-mini-w); }
 
-        /* ── TOPBAR ──────────────────────────────── */
+        /* â”€â”€ TOPBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .topbar {
             position: fixed; top: 0; left: var(--sidebar-w); right: 0;
             height: var(--topbar-h); background: #fff; border-bottom: 1px solid #e8ede9;
@@ -165,7 +165,7 @@
             cursor: pointer; padding: 0; margin-right: 8px; display: flex; align-items: center;
         }
 
-        /* ── MAIN CONTENT (KEMBALI 100% KE ASLI) ──────── */
+        /* â”€â”€ MAIN CONTENT (KEMBALI 100% KE ASLI) â”€â”€â”€â”€â”€â”€â”€â”€ */
         .main-content { margin-left: var(--sidebar-w); padding-top: var(--topbar-h); min-height: 100vh; transition: margin-left 0.3s ease; }
         .content-area { padding: 24px; }
 
@@ -325,7 +325,7 @@
             outline: none;
         }
 
-        /* ── RESPONSIVE HP ──────────────────────────── */
+        /* â”€â”€ RESPONSIVE HP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         @media (max-width: 991px) {
             body.sidebar-mini .sidebar, .sidebar { width: var(--sidebar-w); transform: translateX(-100%); }
             .sidebar.mobile-show { transform: translateX(0); }
@@ -385,6 +385,7 @@
         <a href="{{ route('leaves.index') }}" class="nav-link {{ request()->routeIs('leaves.*') ? 'active' : '' }}">
             <i class="bi bi-calendar2-check-fill"></i> <span class="nav-link-text">Jadwal & Hak Cuti</span>
         </a>
+
 
         <a href="{{ route('employees.export.form') }}" class="nav-link {{ request()->routeIs('employees.export*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-arrow-down-fill"></i> <span class="nav-link-text">Export Excel</span>

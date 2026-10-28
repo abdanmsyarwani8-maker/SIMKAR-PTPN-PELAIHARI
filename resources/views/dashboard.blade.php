@@ -359,7 +359,17 @@
                     <div class="stat-value">
                         {{ number_format($totalKaryawan) }}
                     </div>
-                    <div class="stat-label">Karyawan Aktif</div>
+                    <div class="stat-label d-flex align-items-center gap-1 flex-wrap">
+                        <span>Karyawan Aktif</span>
+                        @if($totalBhl > 0)
+                            <a href="{{ route('employees.index', ['statuses' => ['BHL']]) }}" 
+                               class="badge rounded-pill text-decoration-none border" 
+                               style="background:#f5f3ff; color:#7c3aed; border-color:#ddd6fe !important; font-size:10px; font-weight:600;"
+                               title="Lihat Buruh Harian Lepas">
+                                BHL: {{ number_format($totalBhl) }}
+                            </a>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -455,6 +465,18 @@
                             </div>
                         </div>
                     @endforeach
+
+                    @if($totalBhl > 0)
+                    <div class="p-3 border-top d-flex align-items-center justify-content-between" style="background:#fbfaff;">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge" style="background:#ede9fe; color:#6d28d9; border:1px solid #ddd6fe; font-size:11px;">BHL</span>
+                            <span style="font-size:12px; color:#55695c; font-weight:500;">Buruh Harian Lepas (Dipisahkan)</span>
+                        </div>
+                        <a href="{{ route('employees.index', ['statuses' => ['BHL']]) }}" class="fw-700 text-decoration-none" style="color:#6d28d9; font-size:12.5px;">
+                            {{ number_format($totalBhl) }} orang <i class="bi bi-arrow-right-short"></i>
+                        </a>
+                    </div>
+                    @endif
                 @else
                     <div class="empty-state">
                         <i class="bi bi-bar-chart"></i>

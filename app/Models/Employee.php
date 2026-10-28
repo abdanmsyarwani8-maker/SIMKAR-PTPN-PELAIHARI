@@ -694,6 +694,27 @@ class Employee extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * Scope karyawan aktif tetap / PKWT (memisahkan / tanpa BHL).
+     */
+    public function scopeKaryawanAktif(Builder $query): Builder
+    {
+        return $query->where('is_active', true)
+            ->where(function (Builder $q) {
+                $q->whereNull('status_karyawan')
+                    ->orWhere('status_karyawan', 'not like', '%BHL%');
+            });
+    }
+
+    /**
+     * Scope khusus Buruh Harian Lepas (BHL).
+     */
+    public function scopeBhl(Builder $query): Builder
+    {
+        return $query->where('is_active', true)
+            ->where('status_karyawan', 'like', '%BHL%');
+    }
+
     // ─── Static helpers ───────────────────────────────────────
 
     public static function rentangUsiaOptions(): array
