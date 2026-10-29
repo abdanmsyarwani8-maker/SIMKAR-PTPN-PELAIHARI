@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\MonthlySnapshot;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -22,10 +24,24 @@ class MonthlySnapshotController extends Controller
      */
     public function index()
     {
-        $snapshots = MonthlySnapshot::with('user')
-            ->orderByDesc('tahun')
-            ->orderByDesc('bulan')
-            ->get();
+        $hasTable = Schema::hasTable('monthly_snapshots');
+        $snapshots = collect();
+        $dbError = null;
+
+        if ($hasTable) {
+            try {
+                $snapshots = MonthlySnapshot::with('user')
+                    ->orderByDesc('tahun')
+                    ->orderByDesc('bulan')
+                    ->orderByDesc('id')
+                    ->get();
+            } catch (\Throwable $e) {
+                Log::error('Gagal mengambil data snapshots: '.$e->getMessage());
+                $dbError = 'Terjadi kendala saat membaca data snapshot: '.$e->getMessage();
+            }
+        } else {
+            $dbError = 'Tabel database snapshot (`monthly_snapshots`) belum dibuat di server hosting. Silakan jalankan migrasi database.';
+        }
 
         $bulanIndo = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -33,7 +49,25 @@ class MonthlySnapshotController extends Controller
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
         ];
 
-        return view('snapshots.index', compact('snapshots', 'bulanIndo'));
+        // Hitung statistik karyawan aktif untuk info form
+        $countPkwt = Employee::active()->where('status_karyawan', 'like', '%PKWT%')->count();
+        $countKarpim = Employee::active()->where('status_karyawan', 'like', '%Karpim%')->count();
+        $countKarpel = Employee::active()->where('status_karyawan', 'like', '%Karpel%')->count();
+        $countKtng = Employee::active()->where('status_karyawan', 'like', '%KTNG%')->count();
+        $countBhl = Employee::active()->where('status_karyawan', 'like', '%BHL%')->count();
+        $totalEmployee = Employee::active()->count();
+
+        return view('snapshots.index', compact(
+            'snapshots',
+            'bulanIndo',
+            'dbError',
+            'countPkwt',
+            'countKarpim',
+            'countKarpel',
+            'countKtng',
+            'countBhl',
+            'totalEmployee'
+        ));
     }
 
     /**
@@ -44,22 +78,31 @@ class MonthlySnapshotController extends Controller
         $request->validate([
             'bulan' => ['required', 'integer', 'min:1', 'max:12'],
             'tahun' => ['required', 'integer', 'min:2020', 'max:2099'],
+            'include_family' => ['nullable', 'boolean'],
+            'categories' => ['nullable', 'array'],
+            'categories.*' => ['string'],
             'catatan' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $bulan = (int) $request->input('bulan');
-        $tahun = (int) $request->input('tahun');
-
-        // Cek duplikat — timpa jika sudah ada
-        $existing = MonthlySnapshot::where('bulan', $bulan)->where('tahun', $tahun)->first();
-        if ($existing) {
-            Storage::disk('local')->delete($existing->path);
-            $existing->delete();
+        if (! Schema::hasTable('monthly_snapshots')) {
+            return redirect()
+                ->route('snapshots.index')
+                ->with('error', 'Tabel `monthly_snapshots` belum ada di database. Silakan jalankan migrasi database.');
         }
 
-        // Generate Excel
-        $spreadsheet = $this->buildSnapshotSpreadsheet();
-        $totalKaryawan = Employee::active()->count();
+        $bulan = (int) $request->input('bulan');
+        $tahun = (int) $request->input('tahun');
+        $includeFamily = $request->boolean('include_family', true);
+
+        $allowedCategories = ['PKWT', 'Karpim', 'Karpel', 'KTNG', 'BHL'];
+        $rawCategories = $request->input('categories', $allowedCategories);
+        if (! is_array($rawCategories) || empty($rawCategories)) {
+            $rawCategories = $allowedCategories;
+        }
+        $categories = array_values(array_intersect($allowedCategories, $rawCategories));
+        if (empty($categories)) {
+            $categories = $allowedCategories;
+        }
 
         $bulanIndo = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -67,32 +110,88 @@ class MonthlySnapshotController extends Controller
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
         ];
         $bulanLabel = $bulanIndo[$bulan] ?? $bulan;
-        $fileName = "Snapshot_Karyawan_{$bulanLabel}_{$tahun}.xlsx";
+        $tipeLabel = $includeFamily ? 'Lengkap' : 'Tanpa_Batih';
+        $fileName = "Snapshot_Karyawan_{$tipeLabel}_{$bulanLabel}_{$tahun}.xlsx";
         $storagePath = "snapshots/{$tahun}/{$bulan}_{$fileName}";
 
-        // Simpan ke storage local
-        $tempStream = fopen('php://memory', 'r+');
-        $writer = new Xlsx($spreadsheet);
-        $writer->save($tempStream);
-        rewind($tempStream);
-        Storage::disk('local')->put($storagePath, $tempStream);
-        if (is_resource($tempStream)) {
-            fclose($tempStream);
+        // Cek duplikat — timpa jika sudah ada snapshot bulan, tahun, & tipe yang sama
+        $hasIncludeFamilyCol = Schema::hasColumn('monthly_snapshots', 'include_family');
+        $queryExisting = MonthlySnapshot::where('bulan', $bulan)->where('tahun', $tahun);
+        if ($hasIncludeFamilyCol) {
+            $queryExisting->where('include_family', $includeFamily);
+        }
+        $existing = $queryExisting->first();
+        if ($existing) {
+            try {
+                Storage::disk('local')->delete($existing->path);
+            } catch (\Throwable $e) {
+                Log::warning('Gagal menghapus file snapshot lama: '.$e->getMessage());
+            }
+            $existing->delete();
         }
 
-        MonthlySnapshot::create([
-            'bulan' => $bulan,
-            'tahun' => $tahun,
-            'nama_file' => $fileName,
-            'path' => $storagePath,
-            'jumlah_karyawan' => $totalKaryawan,
-            'user_id' => auth()->id(),
-            'catatan' => $request->input('catatan'),
-        ]);
+        try {
+            // Generate Excel multi-sheet
+            $spreadsheet = $this->buildSnapshotSpreadsheet($categories, $includeFamily);
 
-        return redirect()
-            ->route('snapshots.index')
-            ->with('success', "Snapshot data karyawan bulan {$bulanLabel} {$tahun} berhasil disimpan ({$totalKaryawan} karyawan).");
+            // Hitung total karyawan yang tersimpan dalam snapshot
+            $totalKaryawan = Employee::active()
+                ->where(function ($q) use ($categories) {
+                    foreach ($categories as $cat) {
+                        if ($cat === 'PKWT') {
+                            $q->orWhere('status_karyawan', 'like', '%PKWT%');
+                        } elseif ($cat === 'KTNG') {
+                            $q->orWhere('status_karyawan', 'like', '%KTNG%');
+                        } elseif ($cat === 'BHL') {
+                            $q->orWhere('status_karyawan', 'like', '%BHL%');
+                        } elseif ($cat === 'Karpim') {
+                            $q->orWhere('status_karyawan', 'like', '%Karpim%');
+                        } elseif ($cat === 'Karpel') {
+                            $q->orWhere('status_karyawan', 'like', '%Karpel%');
+                        }
+                    }
+                })
+                ->count();
+
+            // Simpan ke storage local
+            $tempStream = fopen('php://memory', 'r+');
+            $writer = new Xlsx($spreadsheet);
+            $writer->save($tempStream);
+            rewind($tempStream);
+
+            Storage::disk('local')->put($storagePath, $tempStream);
+            if (is_resource($tempStream)) {
+                fclose($tempStream);
+            }
+
+            $payload = [
+                'bulan' => $bulan,
+                'tahun' => $tahun,
+                'nama_file' => $fileName,
+                'path' => $storagePath,
+                'jumlah_karyawan' => $totalKaryawan,
+                'user_id' => auth()->id(),
+                'catatan' => $request->input('catatan'),
+            ];
+
+            if ($hasIncludeFamilyCol) {
+                $payload['include_family'] = $includeFamily;
+            }
+
+            MonthlySnapshot::create($payload);
+
+            $modeText = $includeFamily ? 'Lengkap (+ Batih)' : 'Tanpa Batih';
+
+            return redirect()
+                ->route('snapshots.index')
+                ->with('success', "Snapshot data karyawan bulan {$bulanLabel} {$tahun} ({$modeText}) berhasil disimpan ({$totalKaryawan} karyawan, sheets: ".implode(', ', $categories).').');
+        } catch (\Throwable $e) {
+            Log::error('Gagal menyimpan snapshot: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            return redirect()
+                ->route('snapshots.index')
+                ->with('error', 'Gagal membuat snapshot: '.$e->getMessage().'. Pastikan izin folder storage di server hosting Anda sudah benar.');
+        }
     }
 
     /**
@@ -103,7 +202,7 @@ class MonthlySnapshotController extends Controller
         if (! Storage::disk('local')->exists($snapshot->path)) {
             return redirect()
                 ->route('snapshots.index')
-                ->with('error', 'File snapshot tidak ditemukan di storage.');
+                ->with('error', 'File snapshot tidak ditemukan di storage server.');
         }
 
         return Storage::disk('local')->download(
@@ -120,7 +219,11 @@ class MonthlySnapshotController extends Controller
      */
     public function destroy(MonthlySnapshot $snapshot)
     {
-        Storage::disk('local')->delete($snapshot->path);
+        try {
+            Storage::disk('local')->delete($snapshot->path);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal menghapus file snapshot dari disk: '.$e->getMessage());
+        }
         $snapshot->delete();
 
         return redirect()
@@ -129,17 +232,24 @@ class MonthlySnapshotController extends Controller
     }
 
     /**
-     * Generate spreadsheet multi-sheet berisi semua kategori karyawan aktif.
+     * Generate spreadsheet multi-sheet berisi kategori karyawan aktif yang dipilih.
+     *
+     * @param  array<string>  $categories
      */
-    protected function buildSnapshotSpreadsheet(): Spreadsheet
+    protected function buildSnapshotSpreadsheet(array $categories = ['PKWT', 'Karpim', 'Karpel', 'KTNG', 'BHL'], bool $includeFamily = true): Spreadsheet
     {
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(300);
+
         $spreadsheet = new Spreadsheet;
         $spreadsheet->removeSheetByIndex(0);
 
-        $categories = ['PKWT', 'Karpim', 'Karpel', 'KTNG', 'BHL'];
-
         foreach ($categories as $category) {
-            $query = Employee::with(['bagian', 'jabatan', 'families'])->active();
+            $relations = ['bagian', 'jabatan'];
+            if ($includeFamily) {
+                $relations[] = 'families';
+            }
+            $query = Employee::with($relations)->active();
 
             if ($category === 'PKWT') {
                 $query->where('status_karyawan', 'like', '%PKWT%');
@@ -166,8 +276,6 @@ class MonthlySnapshotController extends Controller
                     'TMT Kerja', 'Tanggal Lahir Karyawan', 'Jenis Kelamin Karyawan',
                     'Agama', 'Pendidikan Terakhir', 'Grade', 'Bagian', 'Jabatan',
                     'Suku', 'Alamat', 'Domisili',
-                    'Nama Anggota Keluarga', 'Hubungan Keluarga',
-                    'Jenis Kelamin Keluarga', 'Tanggal Lahir Keluarga',
                 ];
             } else {
                 $headers = [
@@ -175,9 +283,14 @@ class MonthlySnapshotController extends Controller
                     'TMT Kerja', 'Tanggal Lahir Karyawan', 'Jenis Kelamin Karyawan',
                     'Agama', 'Pendidikan Terakhir', 'Grade', 'Golongan',
                     'Bagian', 'Jabatan', 'Suku', 'Alamat', 'Domisili',
+                ];
+            }
+
+            if ($includeFamily) {
+                $headers = array_merge($headers, [
                     'Nama Anggota Keluarga', 'Hubungan Keluarga',
                     'Jenis Kelamin Keluarga', 'Tanggal Lahir Keluarga',
-                ];
+                ]);
             }
 
             // Header row
@@ -230,21 +343,26 @@ class MonthlySnapshotController extends Controller
                     ];
                 }
 
-                if ($emp->families->isNotEmpty()) {
-                    foreach ($emp->families as $fam) {
-                        $rowValues = array_merge($baseValues, [
-                            (string) ($fam->nama ?? ''),
-                            (string) ($fam->hubungan ?? ''),
-                            (string) ($fam->jenis_kelamin ?? ''),
-                            $fam->tanggal_lahir?->format('Y-m-d') ?? '',
-                        ]);
+                if (! $includeFamily) {
+                    $this->writeRowValues($sheet, $rowNum, $baseValues);
+                    $rowNum++;
+                } else {
+                    if ($emp->families->isNotEmpty()) {
+                        foreach ($emp->families as $fam) {
+                            $rowValues = array_merge($baseValues, [
+                                (string) ($fam->nama ?? ''),
+                                (string) ($fam->hubungan ?? ''),
+                                (string) ($fam->jenis_kelamin ?? ''),
+                                $fam->tanggal_lahir?->format('Y-m-d') ?? '',
+                            ]);
+                            $this->writeRowValues($sheet, $rowNum, $rowValues);
+                            $rowNum++;
+                        }
+                    } else {
+                        $rowValues = array_merge($baseValues, ['', '', '', '']);
                         $this->writeRowValues($sheet, $rowNum, $rowValues);
                         $rowNum++;
                     }
-                } else {
-                    $rowValues = array_merge($baseValues, ['', '', '', '']);
-                    $this->writeRowValues($sheet, $rowNum, $rowValues);
-                    $rowNum++;
                 }
             }
 

@@ -956,6 +956,7 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
 
     /**
      * Cari atau buat Bagian.
+     * Mengarahkan variasi Afdeling Inti ke Afdeling reguler.
      */
     protected function findOrCreateBagian(?string $nama): ?int
     {
@@ -965,6 +966,18 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
         }
 
         $key = strtoupper($nama);
+
+        // Petakan Afdeling Inti I-IV ke Afdeling I-IV reguler
+        if (preg_match('/\b(AFDELING\s+)?INTI\s+(IV|4)\b/i', $key)) {
+            $key = 'AFDELING IV';
+        } elseif (preg_match('/\b(AFDELING\s+)?INTI\s+(III|3)\b/i', $key)) {
+            $key = 'AFDELING III';
+        } elseif (preg_match('/\b(AFDELING\s+)?INTI\s+(II|2)\b/i', $key)) {
+            $key = 'AFDELING II';
+        } elseif (preg_match('/\b(AFDELING\s+)?INTI\s+(I|1)\b/i', $key)) {
+            $key = 'AFDELING I';
+        }
+
         if (isset($this->bagianCache[$key])) {
             return $this->bagianCache[$key];
         }

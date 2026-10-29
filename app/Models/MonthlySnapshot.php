@@ -13,6 +13,7 @@ class MonthlySnapshot extends Model
         'nama_file',
         'path',
         'jumlah_karyawan',
+        'include_family',
         'user_id',
         'catatan',
     ];
@@ -21,11 +22,20 @@ class MonthlySnapshot extends Model
         'bulan' => 'integer',
         'tahun' => 'integer',
         'jumlah_karyawan' => 'integer',
+        'include_family' => 'boolean',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Label tipe snapshot (dengan batih / tanpa batih).
+     */
+    public function getTipeLabelAttribute(): string
+    {
+        return ($this->include_family ?? true) ? 'Lengkap (+ Batih)' : 'Tanpa Batih';
     }
 
     /**

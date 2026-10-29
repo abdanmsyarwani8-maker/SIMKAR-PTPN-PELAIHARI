@@ -57,6 +57,41 @@ class MonthlySnapshotTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_snapshot_without_batih(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::factory()->create(['role' => 'admin']);
+        Employee::create([
+            'personnel_number' => '10002',
+            'nama' => 'Agus Harian',
+            'status_karyawan' => 'BHL',
+            'is_active' => true,
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->post(route('snapshots.store'), [
+                'bulan' => 10,
+                'tahun' => 2026,
+                'include_family' => 0,
+                'categories' => ['BHL'],
+                'catatan' => 'Snapshot BHL tanpa batih',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('snapshots.index'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('monthly_snapshots', [
+            'bulan' => 10,
+            'tahun' => 2026,
+            'include_family' => false,
+            'jumlah_karyawan' => 1,
+        ]);
+    }
+
     public function test_user_can_download_snapshot(): void
     {
         Storage::fake('local');

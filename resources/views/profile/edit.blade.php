@@ -200,6 +200,13 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 @endif
+                @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <div><strong>Perhatian:</strong> {!! session('error') !!}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                @endif
 
                 {{-- Upload Avatar Form (hidden input, submit via JS) --}}
                 <form method="POST" action="{{ route('profile.avatar') }}" enctype="multipart/form-data" id="avatarUploadForm" class="mb-3">

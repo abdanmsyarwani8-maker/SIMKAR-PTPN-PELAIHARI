@@ -15,11 +15,12 @@ return new class extends Migration
             $table->string('nama_file');            // nama file Excel yang disimpan
             $table->string('path');                 // path di storage
             $table->unsignedInteger('jumlah_karyawan')->default(0);
+            $table->boolean('include_family')->default(true);
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->text('catatan')->nullable();
             $table->timestamps();
 
-            $table->unique(['bulan', 'tahun']);
+            $table->unique(['bulan', 'tahun', 'include_family']);
         });
     }
 

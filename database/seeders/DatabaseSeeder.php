@@ -80,8 +80,6 @@ class DatabaseSeeder extends Seeder
         // ── Seed Bagian Umum ────────────────────────────────────
         $bagians = [
             'AFDELING I', 'AFDELING II', 'AFDELING III', 'AFDELING IV',
-            'AFDELING V', 'AFDELING VI', 'AFDELING VII', 'AFDELING VIII',
-            'AFDELING INTI I', 'AFDELING INTI II', 'AFDELING INTI III', 'AFDELING INTI IV',
             'BAGIAN TATA USAHA', 'BAGIAN PERSONALIA & TEKNIK', 'BAGIAN TANAMAN',
             'BAGIAN KEAMANAN', 'BAGIAN PENGOLAHAN', 'BAGIAN TEKNIK',
             'BAGIAN QUALITY ASSURANCE', 'BAGIAN AKUNTANSI & KEUANGAN',
