@@ -103,6 +103,9 @@ class EmployeeLeaveController extends Controller
      */
     public function export(Request $request): StreamedResponse
     {
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(300);
+
         $selectedYear = $request->integer('year', (int) now()->year);
         if ($selectedYear < 1970 || $selectedYear > 2100) {
             $selectedYear = (int) now()->year;
@@ -409,11 +412,17 @@ class EmployeeLeaveController extends Controller
         $fileName = "Jadwal_Cuti_Karyawan_PTPN_Pelaihari_{$selectedYear}.xlsx";
 
         return response()->streamDownload(function () use ($spreadsheet) {
+            if (! app()->runningUnitTests()) {
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
+            }
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         }, $fileName, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Cache-Control' => 'max-age=0',
+            'Cache-Control' => 'max-age=0, no-cache, must-revalidate',
+            'Pragma' => 'public',
         ]);
     }
 

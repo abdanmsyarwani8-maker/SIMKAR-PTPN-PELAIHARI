@@ -108,16 +108,24 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
 
         $nik = $data['nik_sap'] ?? null;
         $namaKaryawan = $data['nama_karyawan'] ?? null;
+        $statusKaryawan = $data['status_karyawan'] ?? null;
+        $isBhlRow = str_contains(strtoupper((string) $statusKaryawan), 'BHL');
 
         // Validasi NIK SAP sebagai identitas utama
+        // Pengecualian: BHL boleh tanpa NIK SAP — akan diidentifikasi via nama
         if (empty($nik)) {
-            $this->skipped++;
-            $label = $namaKaryawan ?: 'Nama tidak tersedia';
-            $msg = "[{$this->sheetName}] Baris {$rowNum}: NIK SAP kosong atau tidak valid (Karyawan: '{$label}'). Baris dilewati.";
-            $this->errors[] = $msg;
-            $this->skippedDetails[] = $msg;
+            if ($isBhlRow && ! empty($namaKaryawan)) {
+                // Buat pseudo-NIK dari nama agar tidak duplikat dalam cache
+                $nik = 'BHL-'.md5(strtolower(trim($namaKaryawan)).'-'.$this->sheetName);
+            } else {
+                $this->skipped++;
+                $label = $namaKaryawan ?: 'Nama tidak tersedia';
+                $msg = "[{$this->sheetName}] Baris {$rowNum}: NIK SAP kosong atau tidak valid (Karyawan: '{$label}'). Baris dilewati.";
+                $this->errors[] = $msg;
+                $this->skippedDetails[] = $msg;
 
-            return;
+                return;
+            }
         }
 
         // Resolusi referensi Unit, Bagian, Jabatan
@@ -162,10 +170,19 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
 
         // ── 1. Pemrosesan Data Karyawan ───────────────────────────────
         $employee = $this->employeeCache[$nik] ?? null;
+        $isBhlPseudoNik = str_starts_with($nik, 'BHL-');
 
         if (! $employee) {
             // Pertama kali NIK ini dibaca dalam sesi import ini
-            $employee = Employee::withTrashed()->where('personnel_number', $nik)->first();
+            if ($isBhlPseudoNik) {
+                // BHL tanpa NIK SAP: cari berdasarkan nama karyawan
+                $employee = Employee::withTrashed()
+                    ->where('nama', $namaKaryawan)
+                    ->where('status_karyawan', 'like', '%BHL%')
+                    ->first();
+            } else {
+                $employee = Employee::withTrashed()->where('personnel_number', $nik)->first();
+            }
 
             if ($employee) {
                 // Karyawan sudah ada: restore jika soft-deleted & perbarui data
@@ -198,9 +215,12 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
                     return;
                 }
 
-                $employee = Employee::create(array_merge($employeePayload, [
-                    'personnel_number' => $nik,
-                ]));
+                // Untuk BHL tanpa NIK SAP: simpan tanpa personnel_number
+                $createPayload = $isBhlPseudoNik
+                    ? $employeePayload
+                    : array_merge($employeePayload, ['personnel_number' => $nik]);
+
+                $employee = Employee::create($createPayload);
                 $this->inserted++;
             }
 

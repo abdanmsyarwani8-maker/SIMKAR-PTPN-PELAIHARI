@@ -125,6 +125,9 @@ class UserManagementController extends Controller
      */
     public function export(): Response
     {
+        @ini_set('memory_limit', '256M');
+        @set_time_limit(180);
+
         $users = User::orderBy('name')->get();
 
         $spreadsheet = new Spreadsheet;
@@ -174,12 +177,18 @@ class UserManagementController extends Controller
 
         $dateSuffix = now()->format('Ymd_His');
         $fileName = "SIMKAR_Data_Pengguna_{$dateSuffix}.xlsx";
-        $tempPath = tempnam(sys_get_temp_dir(), 'simkar_users_').'.xlsx';
 
-        (new Xlsx($spreadsheet))->save($tempPath);
-
-        return response()->download($tempPath, $fileName, [
+        return response()->streamDownload(function () use ($spreadsheet) {
+            if (! app()->runningUnitTests()) {
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
+            }
+            (new Xlsx($spreadsheet))->save('php://output');
+        }, $fileName, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+            'Cache-Control' => 'max-age=0, no-cache, must-revalidate',
+            'Pragma' => 'public',
+        ]);
     }
 }

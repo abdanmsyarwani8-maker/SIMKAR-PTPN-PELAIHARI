@@ -4,6 +4,11 @@
 
 @push('styles')
 <style>
+.profile-avatar-wrap {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 4px;
+}
 .profile-avatar-circle {
     width: 86px;
     height: 86px;
@@ -17,7 +22,26 @@
     justify-content: center;
     box-shadow: 0 4px 14px rgba(26, 92, 46, 0.25);
     border: 3px solid #fff;
+    overflow: hidden;
 }
+.profile-avatar-circle img {
+    width: 100%; height: 100%; object-fit: cover;
+}
+.avatar-edit-btn {
+    position: absolute;
+    bottom: 2px; right: 2px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--hijau-tua);
+    color: #fff;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    border: 2px solid #fff;
+    transition: background 0.15s;
+    z-index: 2;
+}
+.avatar-edit-btn:hover { background: var(--hijau-med); }
 .profile-meta-item {
     display: flex;
     align-items: center;
@@ -74,8 +98,17 @@
         <div class="card mb-4">
             <div class="card-body text-center p-4">
                 <div class="mb-3">
-                    <div class="profile-avatar-circle">
-                        {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                    <div class="profile-avatar-wrap">
+                        <div class="profile-avatar-circle" id="avatarPreviewWrap">
+                            @if($user->avatar)
+                                <img src="{{ Storage::url($user->avatar) }}" alt="Foto Profil" id="avatarPreviewImg">
+                            @else
+                                <span id="avatarInitials">{{ strtoupper(substr(auth()->user()->name, 0, 2)) }}</span>
+                            @endif
+                        </div>
+                        <label for="avatarFileInput" class="avatar-edit-btn" title="Ganti foto profil">
+                            <i class="bi bi-camera-fill"></i>
+                        </label>
                     </div>
                 </div>
                 <h5 class="fw-700 mb-1" style="color:var(--hijau-tua)">{{ auth()->user()->name }}</h5>
@@ -145,6 +178,7 @@
             </div>
 
             <div class="card-body p-4">
+                {{-- Flash messages --}}
                 @if(session('status') === 'profile-updated')
                 <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3" role="alert">
                     <i class="bi bi-check-circle-fill fs-5"></i>
@@ -152,6 +186,34 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 @endif
+                @if(session('status') === 'avatar-updated')
+                <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3" role="alert">
+                    <i class="bi bi-check-circle-fill fs-5"></i>
+                    <div><strong>Berhasil!</strong> Foto profil Anda telah diperbarui.</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                @endif
+                @if(session('status') === 'avatar-removed')
+                <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3" role="alert">
+                    <i class="bi bi-check-circle-fill fs-5"></i>
+                    <div><strong>Berhasil!</strong> Foto profil Anda telah dihapus.</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                @endif
+
+                {{-- Upload Avatar Form (hidden input, submit via JS) --}}
+                <form method="POST" action="{{ route('profile.avatar') }}" enctype="multipart/form-data" id="avatarUploadForm" class="mb-3">
+                    @csrf
+                    <input type="file" id="avatarFileInput" name="avatar" accept="image/jpg,image/jpeg,image/png,image/webp" class="d-none">
+                    <input type="hidden" name="remove_avatar" id="removeAvatarInput" value="0">
+                    @if($user->avatar)
+                    <div class="d-flex align-items-center gap-2 mt-2" id="avatarActions">
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill d-inline-flex align-items-center gap-1" onclick="removeAvatar()" id="removeAvatarBtn">
+                            <i class="bi bi-trash3-fill" style="font-size:11px"></i> Hapus Foto
+                        </button>
+                    </div>
+                    @endif
+                </form>
 
                 <form method="POST" action="{{ route('profile.update') }}">
                     @csrf
@@ -353,6 +415,50 @@ function checkProfilePasswordMatch() {
         indicator.className = 'mt-1 small text-danger d-flex align-items-center gap-1';
         indicator.innerHTML = '<i class="bi bi-x-circle-fill"></i> Konfirmasi kata sandi belum sama dengan kata sandi baru.';
     }
+}
+
+// ─── Avatar Upload ─────────────────────────────────────────────
+const avatarFileInput = document.getElementById('avatarFileInput');
+const avatarUploadForm = document.getElementById('avatarUploadForm');
+
+if (avatarFileInput) {
+    avatarFileInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        // Validasi klien sederhana
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Format foto tidak didukung. Gunakan JPG, PNG, atau WEBP.');
+            this.value = '';
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Ukuran foto maksimal 2 MB.');
+            this.value = '';
+            return;
+        }
+
+        // Preview langsung
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const wrap = document.getElementById('avatarPreviewWrap');
+            if (wrap) {
+                wrap.innerHTML = '<img src="' + e.target.result + '" alt="Preview" style="width:100%;height:100%;object-fit:cover;">';
+            }
+        };
+        reader.readAsDataURL(file);
+
+        // Auto-submit form
+        document.getElementById('removeAvatarInput').value = '0';
+        avatarUploadForm.submit();
+    });
+}
+
+function removeAvatar() {
+    if (!confirm('Hapus foto profil Anda?')) return;
+    document.getElementById('removeAvatarInput').value = '1';
+    avatarUploadForm.submit();
 }
 </script>
 @endpush

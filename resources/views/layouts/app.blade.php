@@ -105,7 +105,9 @@
             width: 36px; height: 36px; background: var(--hijau-muda); border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             font-size: 15px; color: #fff; font-weight: 700; flex-shrink: 0;
+            overflow: hidden;
         }
+        .sidebar-user .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .sidebar-user .user-info { flex: 1; min-width: 0; transition: opacity 0.2s ease; }
         .sidebar-user .user-name { color: #fff; font-size: 12.5px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; }
         .sidebar-user .user-role { color: rgba(255,255,255,.5); font-size: 10.5px; }
@@ -391,6 +393,10 @@
             <i class="bi bi-file-earmark-arrow-down-fill"></i> <span class="nav-link-text">Export Excel</span>
         </a>
 
+        <a href="{{ route('snapshots.index') }}" class="nav-link {{ request()->routeIs('snapshots.*') ? 'active' : '' }}">
+            <i class="bi bi-archive-fill"></i> <span class="nav-link-text">Snapshot Bulanan</span>
+        </a>
+
         @auth
         @if(auth()->user()->isAdmin())
         <div class="nav-section-label">Administrasi</div>
@@ -422,7 +428,13 @@
     <div class="sidebar-footer">
         @auth
         <div class="sidebar-user">
-            <div class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
+            <div class="avatar">
+                @if(auth()->user()->avatar)
+                    <img src="{{ Storage::url(auth()->user()->avatar) }}" alt="Foto Profil">
+                @else
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                @endif
+            </div>
             <div class="user-info">
                 <div class="user-name">{{ auth()->user()->name }}</div>
                 <div class="user-role">{{ auth()->user()->role_label ?? 'Administrator' }}</div>

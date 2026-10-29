@@ -6,6 +6,7 @@ use App\Http\Controllers\EmployeeExportController;
 use App\Http\Controllers\EmployeeFamilyController;
 use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\EmployeeLeaveController;
+use App\Http\Controllers\MonthlySnapshotController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
@@ -23,6 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profil', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profil', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profil/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
 
     // ── Data Karyawan ─────────────────────────────────────────
     Route::get('/karyawan', [EmployeeController::class, 'index'])->name('employees.index');
@@ -35,8 +37,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/karyawan/export', [EmployeeExportController::class, 'showForm'])->name('employees.export.form');
     Route::match(['get', 'post'], '/karyawan/export/download', [EmployeeExportController::class, 'export'])->name('employees.export');
 
+    // ── Snapshot Bulanan (Dapat diakses semua user) ──────────
+    Route::get('/snapshot', [MonthlySnapshotController::class, 'index'])->name('snapshots.index');
+    Route::get('/snapshot/{snapshot}/download', [MonthlySnapshotController::class, 'download'])->name('snapshots.download');
+
     // ── Operasi Karyawan: Hanya Admin ────────────────────────
     Route::middleware('admin')->group(function () {
+        // ── Snapshot Bulanan: Simpan & Hapus ──────────────────────
+        Route::post('/snapshot', [MonthlySnapshotController::class, 'store'])->name('snapshots.store');
+        Route::delete('/snapshot/{snapshot}', [MonthlySnapshotController::class, 'destroy'])->name('snapshots.destroy');
+
         // ── Edit / Hapus Data Cuti Karyawan (Hak Cuti) ───────────
         Route::get('/cuti/{employee}/edit', [EmployeeLeaveController::class, 'edit'])->name('leaves.edit');
         Route::put('/cuti/{employee}', [EmployeeLeaveController::class, 'update'])->name('leaves.update');
