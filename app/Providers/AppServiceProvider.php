@@ -11,7 +11,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Otomatis mendeteksi folder public_html jika dihosting di cPanel
+        foreach ([
+            base_path('../../public_html'),
+            base_path('../public_html'),
+        ] as $candidate) {
+            if (is_dir($candidate)) {
+                $this->app->usePublicPath(realpath($candidate));
+                break;
+            }
+        }
     }
 
     /**

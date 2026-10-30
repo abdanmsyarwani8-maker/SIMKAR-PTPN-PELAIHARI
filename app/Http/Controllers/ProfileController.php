@@ -62,13 +62,19 @@ class ProfileController extends Controller
                     ->with('error', 'Kolom `avatar` belum ada di tabel `users` database hosting. Silakan jalankan migrasi database.');
             }
 
+            $folderName = is_dir(public_path('Images')) ? 'Images' : 'images';
+            $avatarDir = public_path($folderName.'/avatars');
+
             if ($request->boolean('remove_avatar')) {
-                // Hapus avatar lama dari storage
+                // Hapus avatar lama
                 if ($user->avatar) {
+                    $oldPath = public_path($user->avatar);
+                    if (file_exists($oldPath)) {
+                        @unlink($oldPath);
+                    }
                     try {
                         Storage::disk('public')->delete($user->avatar);
-                    } catch (\Throwable $e) {
-                        Log::warning('Gagal menghapus avatar dari disk: '.$e->getMessage());
+                    } catch (\Throwable) {
                     }
                 }
                 $user->avatar = null;
@@ -80,15 +86,25 @@ class ProfileController extends Controller
             if ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
                 // Hapus avatar lama jika ada
                 if ($user->avatar) {
+                    $oldPath = public_path($user->avatar);
+                    if (file_exists($oldPath)) {
+                        @unlink($oldPath);
+                    }
                     try {
                         Storage::disk('public')->delete($user->avatar);
-                    } catch (\Throwable $e) {
-                        Log::warning('Gagal menghapus avatar lama dari disk: '.$e->getMessage());
+                    } catch (\Throwable) {
                     }
                 }
 
-                $path = $request->file('avatar')->store('avatars', 'public');
-                $user->avatar = $path;
+                if (! file_exists($avatarDir)) {
+                    @mkdir($avatarDir, 0755, true);
+                }
+
+                $file = $request->file('avatar');
+                $filename = 'avatar_'.$user->id.'_'.time().'.'.$file->getClientOriginalExtension();
+                $file->move($avatarDir, $filename);
+
+                $user->avatar = $folderName.'/avatars/'.$filename;
                 $user->save();
 
                 return Redirect::route('profile.edit')->with('status', 'avatar-updated');
@@ -101,7 +117,7 @@ class ProfileController extends Controller
             Log::error('Error saat update avatar: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             return Redirect::route('profile.edit')
-                ->with('error', 'Gagal memperbarui foto profil: '.$e->getMessage().'. Pastikan izin folder `storage` di server hosting sudah disetel ke 0775 atau 0755.');
+                ->with('error', 'Gagal memperbarui foto profil: '.$e->getMessage().'. Pastikan folder `images` di `public_html` memiliki izin tulis (0755/0775).');
         }
     }
 
@@ -120,7 +136,14 @@ class ProfileController extends Controller
 
         // Hapus avatar saat akun dihapus
         if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
+            $oldPath = public_path($user->avatar);
+            if (file_exists($oldPath)) {
+                @unlink($oldPath);
+            }
+            try {
+                Storage::disk('public')->delete($user->avatar);
+            } catch (\Throwable) {
+            }
         }
 
         $user->delete();

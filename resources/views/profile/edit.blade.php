@@ -101,7 +101,7 @@
                     <div class="profile-avatar-wrap">
                         <div class="profile-avatar-circle" id="avatarPreviewWrap">
                             @if($user->avatar)
-                                <img src="{{ Storage::url($user->avatar) }}" alt="Foto Profil" id="avatarPreviewImg">
+                                <img src="{{ $user->avatar_url }}" alt="Foto Profil" id="avatarPreviewImg">
                             @else
                                 <span id="avatarInitials">{{ strtoupper(substr(auth()->user()->name, 0, 2)) }}</span>
                             @endif

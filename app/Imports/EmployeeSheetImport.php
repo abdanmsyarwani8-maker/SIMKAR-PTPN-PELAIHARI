@@ -471,6 +471,28 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
         $bagian = $get(['organizational_unit', 'bagian', 'sub_bagian', 'sub/bagian', 'org_unit', 'org._unit', 'divisi', 'departemen']);
         $jabatan = $get(['position', 'jabatan', 'posisi', 'pekerjaan']);
 
+        // Jika kolom bagian berisi jabatan khusus krani / petugas global teling dan jabatan belum diisi atau default ke PEMANEN
+        if ($bagian) {
+            $upperBagian = strtoupper(trim((string) $bagian));
+            $kraniPositions = [
+                'KRANI PRODUKSI',
+                'KRANI TEKNIK',
+                'KRANI AKUNTANSI',
+                'KRANI FINANSIL',
+                'KRANI TATA USAHA',
+                'PETUGAS GLOBAL TELING AFD I',
+                'PETUGAS GLOBAL TELING AFDELING I',
+            ];
+            foreach ($kraniPositions as $pos) {
+                if (str_contains($upperBagian, $pos)) {
+                    if (empty($jabatan) || strtoupper(trim((string) $jabatan)) === 'PEMANEN') {
+                        $jabatan = $pos;
+                    }
+                    break;
+                }
+            }
+        }
+
         $golongan = $get(['pay_scale_group', 'golongan', 'payscale_group']);
         $grupGolongan = $get(['pay_scale_type', 'grup_golongan', 'payscale_type']);
         $grupJabatan = $get(['emp._group', 'emp_group', 'grup_jabatan', 'employee_group_2']);
@@ -975,6 +997,8 @@ class EmployeeSheetImport implements SkipsEmptyRows, ToCollection, WithHeadingRo
         } elseif (preg_match('/\b(AFDELING\s+)?INTI\s+(II|2)\b/i', $key)) {
             $key = 'AFDELING II';
         } elseif (preg_match('/\b(AFDELING\s+)?INTI\s+(I|1)\b/i', $key)) {
+            $key = 'AFDELING I';
+        } elseif (str_contains($key, 'PETUGAS GLOBAL TELING AFD I') || str_contains($key, 'GLOBAL TELING AFD I')) {
             $key = 'AFDELING I';
         }
 

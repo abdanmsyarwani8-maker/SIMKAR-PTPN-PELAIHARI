@@ -430,7 +430,7 @@
         <div class="sidebar-user">
             <div class="avatar">
                 @if(auth()->user()->avatar)
-                    <img src="{{ Storage::url(auth()->user()->avatar) }}" alt="Foto Profil">
+                    <img src="{{ auth()->user()->avatar_url }}" alt="Foto Profil">
                 @else
                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                 @endif

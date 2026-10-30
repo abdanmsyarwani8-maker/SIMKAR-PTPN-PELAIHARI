@@ -92,3 +92,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // ─── Auth routes dari Breeze ─────────────────────────────────
 require __DIR__.'/auth.php';
+
+// ─── Fallback Handler Berkas Storage (Khusus Hosting Tanpa Symlink) ──────────
+Route::get('/storage/{path}', function (string $path) {
+    $cleanPath = str_replace(["\0", '..'], '', $path);
+    $diskPath = storage_path('app/public/'.$cleanPath);
+
+    if (! file_exists($diskPath) || ! is_file($diskPath)) {
+        abort(404);
+    }
+
+    $realBase = realpath(storage_path('app/public'));
+    $realTarget = realpath($diskPath);
+
+    if (! $realTarget || ! str_starts_with($realTarget, $realBase)) {
+        abort(403);
+    }
+
+    return response()->file($diskPath);
+})->where('path', '.*')->name('storage.fallback');

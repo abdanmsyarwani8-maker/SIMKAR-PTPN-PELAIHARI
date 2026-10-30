@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -101,10 +100,8 @@ class ProfileTest extends TestCase
 
     public function test_user_can_upload_avatar(): void
     {
-        Storage::fake('public');
-
         $user = User::factory()->create();
-        $file = UploadedFile::fake()->image('avatar.jpg', 200, 200);
+        $file = UploadedFile::fake()->create('avatar.jpg', 100, 'image/jpeg');
 
         $response = $this
             ->actingAs($user)
@@ -119,17 +116,23 @@ class ProfileTest extends TestCase
 
         $user->refresh();
         $this->assertNotNull($user->avatar);
-        Storage::disk('public')->assertExists($user->avatar);
+        $this->assertFileExists(public_path($user->avatar));
+
+        // Bersihkan berkas tes
+        @unlink(public_path($user->avatar));
     }
 
     public function test_user_can_remove_avatar(): void
     {
-        Storage::fake('public');
+        $testPath = public_path('images/avatars/test_dummy.jpg');
+        if (! file_exists(dirname($testPath))) {
+            @mkdir(dirname($testPath), 0755, true);
+        }
+        file_put_contents($testPath, 'content');
 
         $user = User::factory()->create([
-            'avatar' => 'avatars/dummy.jpg',
+            'avatar' => 'images/avatars/test_dummy.jpg',
         ]);
-        Storage::disk('public')->put('avatars/dummy.jpg', 'content');
 
         $response = $this
             ->actingAs($user)
@@ -144,6 +147,6 @@ class ProfileTest extends TestCase
 
         $user->refresh();
         $this->assertNull($user->avatar);
-        Storage::disk('public')->assertMissing('avatars/dummy.jpg');
+        $this->assertFileDoesNotExist($testPath);
     }
 }

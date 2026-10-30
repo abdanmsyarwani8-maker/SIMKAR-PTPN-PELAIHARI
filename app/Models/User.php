@@ -51,4 +51,20 @@ class User extends Authenticatable
             default => 'Tidak Diketahui',
         };
     }
+
+    /**
+     * URL foto profil pengguna yang aman untuk semua domain / hosting.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (! $this->avatar) {
+            return null;
+        }
+
+        if (str_starts_with(strtolower($this->avatar), 'images/')) {
+            return asset($this->avatar);
+        }
+
+        return asset('storage/'.$this->avatar);
+    }
 }
